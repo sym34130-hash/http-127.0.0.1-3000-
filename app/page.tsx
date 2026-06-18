@@ -52,6 +52,17 @@ import type { Filters, KpiSet, OperationAlert, RoadmapResponse, SlotAnalysis, Tr
 
 type ViewMode = "simple" | "decision";
 type LoadState = "idle" | "loading" | "ready" | "error";
+type AlertGroups = {
+  active: OperationAlert[];
+  history: OperationAlert[];
+};
+type DecisionLevel = "ok" | "warning" | "critical";
+type DecisionStatus = {
+  action: string;
+  detail: string;
+  level: DecisionLevel;
+  title: string;
+};
 
 const TIMELINE_WIDTH = 1080;
 const BLOCK_HEIGHT = 64;
@@ -137,6 +148,10 @@ export default function Page() {
   const fluxOptions = useMemo(() => uniqueFlux(dateTrucks), [dateTrucks]);
   const weekSummary = useMemo(() => buildWeekSummary(data?.trucks ?? []), [data?.trucks]);
   const nowMinute = useMemo(() => getOperationalMinute(selectedDate), [clockTick, selectedDate]);
+  const alertGroups = useMemo(
+    () => splitOperationAlerts(alerts, nowMinute, visibleTrucks),
+    [alerts, nowMinute, visibleTrucks]
+  );
   const generatedAt = data?.generatedAt ? new Date(data.generatedAt) : null;
 
   return (
@@ -200,7 +215,7 @@ export default function Page() {
 
           {viewMode === "simple" ? (
             <SimpleView
-              alerts={alerts}
+              alerts={alertGroups.active}
               kpis={kpis}
               nowMinute={nowMinute}
               selectedDate={selectedDate}
@@ -208,7 +223,8 @@ export default function Page() {
             />
           ) : (
             <DecisionView
-              alerts={alerts}
+              activeAlerts={alertGroups.active}
+              historicalAlerts={alertGroups.history}
               nowMinute={nowMinute}
               selectedDate={selectedDate}
               slots={slots}
@@ -535,21 +551,30 @@ function SimpleView({
 }
 
 function DecisionView({
-  alerts,
+  activeAlerts,
+  historicalAlerts,
   nowMinute,
   selectedDate,
   slots,
   trucks
 }: {
-  alerts: OperationAlert[];
+  activeAlerts: OperationAlert[];
+  historicalAlerts: OperationAlert[];
   nowMinute: number;
   selectedDate: string;
   slots: SlotAnalysis[];
   trucks: Truck[];
 }) {
+  const decisionStatus = useMemo(
+    () => buildDecisionStatus(trucks, slots, activeAlerts, nowMinute),
+    [activeAlerts, nowMinute, slots, trucks]
+  );
+
   return (
     <div className="flex flex-col gap-4">
-      <FieldView alerts={alerts} nowMinute={nowMinute} trucks={trucks} />
+      <DecisionStatusBanner status={decisionStatus} />
+
+      <FieldView alerts={activeAlerts} nowMinute={nowMinute} trucks={trucks} />
 
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_420px]">
         <div className="min-w-0">
@@ -557,7 +582,8 @@ function DecisionView({
         </div>
 
         <div className="flex flex-col gap-4">
-          <AlertPanel alerts={alerts} />
+          <AlertPanel alerts={activeAlerts} />
+          <HistoricalAlertPanel alerts={historicalAlerts} />
           <CorrectionsPanel trucks={trucks} estimatedCount={trucks.filter((truck) => truck.durationEstimated).length} />
         </div>
       </div>
@@ -833,11 +859,13 @@ function AlertPanel({ alerts }: { alerts: OperationAlert[] }) {
     <section className="border border-line bg-white">
       <div className="flex items-center gap-2 border-b border-line px-4 py-3">
         <AlertTriangle className="h-5 w-5 text-warning" />
-        <h2 className="text-base font-semibold">Alertes operationnelles</h2>
+        <h2 className="text-base font-semibold">Risques actifs et a venir</h2>
       </div>
       <div className="grid gap-2 p-4">
         {alerts.length === 0 ? (
-          <div className="border border-line bg-field px-3 py-3 text-sm text-muted">Aucune alerte active.</div>
+          <div className="border border-line bg-field px-3 py-3 text-sm text-muted">
+            Aucun risque actif ou a venir.
+          </div>
         ) : (
           alerts.map((alert) => (
             <div
@@ -851,6 +879,32 @@ function AlertPanel({ alerts }: { alerts: OperationAlert[] }) {
                 </span>
               </div>
               <p className="mt-1 text-sm text-muted">{alert.detail}</p>
+            </div>
+          ))
+        )}
+      </div>
+    </section>
+  );
+}
+
+function HistoricalAlertPanel({ alerts }: { alerts: OperationAlert[] }) {
+  return (
+    <section className="border border-line bg-white">
+      <div className="flex items-center justify-between gap-2 border-b border-line px-4 py-3">
+        <div className="flex items-center gap-2">
+          <Clock className="h-5 w-5 text-muted" />
+          <h2 className="text-base font-semibold">Historique tensions</h2>
+        </div>
+        <span className="text-sm font-semibold text-muted">{alerts.length}</span>
+      </div>
+      <div className="grid gap-2 p-4">
+        {alerts.length === 0 ? (
+          <div className="border border-line bg-field px-3 py-3 text-sm text-muted">Aucune tension passee.</div>
+        ) : (
+          alerts.slice(0, 5).map((alert) => (
+            <div className="border-l-4 border-muted bg-field px-3 py-2" key={`history-${alert.id}`}>
+              <div className="text-sm font-semibold">{alert.title}</div>
+              <div className="text-xs text-muted">{alert.detail}</div>
             </div>
           ))
         )}
@@ -1027,7 +1081,7 @@ function FieldView({
           <FieldMetric label="Camions en attente" value={waitingNow.length} />
           <FieldMetric
             label="Creneaux critiques"
-            value={criticalAlerts.filter((alert) => /Saturation|Backlog|Pic/.test(alert.title)).length}
+            value={criticalAlerts.filter((alert) => /Saturation|Attente quai|Backlog|Pic/.test(alert.title)).length}
           />
           <FieldMetric
             label="Donnees a corriger"
@@ -1060,6 +1114,27 @@ function FieldView({
               ))
             )}
           </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function DecisionStatusBanner({ status }: { status: DecisionStatus }) {
+  const tone = decisionTone(status.level);
+
+  return (
+    <section className={clsx("border px-4 py-4", tone.container)}>
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        <div>
+          <div className="flex items-center gap-2">
+            <span className={clsx("h-3 w-3", tone.dot)} />
+            <h2 className="text-lg font-semibold">{status.title}</h2>
+          </div>
+          <p className="mt-1 text-sm text-muted">{status.detail}</p>
+        </div>
+        <div className={clsx("border px-3 py-2 text-sm font-semibold", tone.action)}>
+          {status.action}
         </div>
       </div>
     </section>
@@ -1287,6 +1362,125 @@ function buildWeekSummary(trucks: Truck[]): DaySummary[] {
     });
 }
 
+function splitOperationAlerts(alerts: OperationAlert[], nowMinute: number, trucks: Truck[]): AlertGroups {
+  const waitingNow = buildWaitingNow(trucks, nowMinute).length;
+
+  return alerts.reduce<AlertGroups>(
+    (groups, alert) => {
+      const slotWindow = extractAlertWindow(alert);
+      if (slotWindow) {
+        const target = slotWindow.end > nowMinute ? groups.active : groups.history;
+        target.push(alert);
+        return groups;
+      }
+
+      if (alert.id === "high-wait" || alert.id === "queue-critical") {
+        const target = waitingNow > 0 ? groups.active : groups.history;
+        target.push(alert);
+        return groups;
+      }
+
+      groups.active.push(alert);
+      return groups;
+    },
+    { active: [], history: [] }
+  );
+}
+
+function buildDecisionStatus(
+  trucks: Truck[],
+  slots: SlotAnalysis[],
+  activeAlerts: OperationAlert[],
+  nowMinute: number
+): DecisionStatus {
+  const current = buildCurrentTrucks(trucks, nowMinute);
+  const waitingNow = buildWaitingNow(trucks, nowMinute);
+  const next = buildNextArrivals(trucks, nowMinute);
+  const currentSlot = slots.find((slot) => slot.start <= nowMinute && slot.end > nowMinute);
+  const criticalNow =
+    waitingNow.length > 0 ||
+    currentSlot?.status === "backlog" ||
+    currentSlot?.status === "sature" ||
+    activeAlerts.some((alert) => alert.level === "critical" && isAlertCurrent(alert, nowMinute));
+
+  if (criticalNow) {
+    return {
+      action: waitingNow.length > 0 ? "Traiter les camions en attente" : "Surveiller les portes maintenant",
+      detail: `${waitingNow.length} camion(s) en attente, ${current.length}/${DOCK_COUNT} porte(s) occupee(s), ${next.length} arrivee(s) dans 30 min.`,
+      level: "critical",
+      title: "Action requise"
+    };
+  }
+
+  const warningSoon =
+    next.some((truck) => (truck.temps_attente ?? 0) > 0) ||
+    currentSlot?.status === "sous_tension" ||
+    activeAlerts.some((alert) => alert.level === "warning");
+
+  if (warningSoon) {
+    return {
+      action: "Anticiper le prochain creneau",
+      detail: `${current.length}/${DOCK_COUNT} porte(s) occupee(s), ${next.length} arrivee(s) dans 30 min, aucun camion en attente maintenant.`,
+      level: "warning",
+      title: "Sous tension"
+    };
+  }
+
+  return {
+    action: "Aucune action immediate",
+    detail: `${current.length}/${DOCK_COUNT} porte(s) occupee(s), ${next.length} arrivee(s) dans 30 min, aucun camion en attente.`,
+    level: "ok",
+    title: "Situation fluide"
+  };
+}
+
+function buildCurrentTrucks(trucks: Truck[], nowMinute: number): Truck[] {
+  return trucks.filter(
+    (truck) =>
+      truck.miseAQuaiMinutes !== null &&
+      truck.finDechargementMinutes !== null &&
+      truck.miseAQuaiMinutes <= nowMinute &&
+      truck.finDechargementMinutes > nowMinute
+  );
+}
+
+function buildWaitingNow(trucks: Truck[], nowMinute: number): Truck[] {
+  return trucks.filter(
+    (truck) =>
+      truck.arrivalMinutes !== null &&
+      truck.miseAQuaiMinutes !== null &&
+      truck.arrivalMinutes <= nowMinute &&
+      truck.miseAQuaiMinutes > nowMinute
+  );
+}
+
+function buildNextArrivals(trucks: Truck[], nowMinute: number): Truck[] {
+  return trucks.filter(
+    (truck) =>
+      truck.arrivalMinutes !== null &&
+      truck.arrivalMinutes >= nowMinute &&
+      truck.arrivalMinutes < nowMinute + SLOT_MINUTES
+  );
+}
+
+function extractAlertWindow(alert: OperationAlert): { end: number; start: number } | null {
+  const match = `${alert.id} ${alert.detail}`.match(/(\d{2})h(\d{2})\s*-\s*(\d{2})h(\d{2})/);
+  if (!match) {
+    return null;
+  }
+
+  const [, startHour, startMinute, endHour, endMinute] = match;
+  return {
+    start: Number(startHour) * 60 + Number(startMinute),
+    end: Number(endHour) * 60 + Number(endMinute)
+  };
+}
+
+function isAlertCurrent(alert: OperationAlert, nowMinute: number): boolean {
+  const slotWindow = extractAlertWindow(alert);
+  return !slotWindow || (slotWindow.start <= nowMinute && slotWindow.end > nowMinute);
+}
+
 function getWeekdayLabel(date: string): string {
   const [year, month, day] = date.split("-").map(Number);
   const parsed = new Date(Date.UTC(year, month - 1, day));
@@ -1403,6 +1597,35 @@ function slotBadge(status: SlotAnalysis["status"]) {
   };
 
   return classes[status];
+}
+
+function decisionTone(level: DecisionLevel) {
+  const tones: Record<
+    DecisionLevel,
+    {
+      action: string;
+      container: string;
+      dot: string;
+    }
+  > = {
+    ok: {
+      action: "border-success/30 bg-success/10 text-success",
+      container: "border-success/30 bg-success/5",
+      dot: "bg-success"
+    },
+    warning: {
+      action: "border-warning/30 bg-warning/10 text-warning",
+      container: "border-warning/40 bg-warning/10",
+      dot: "bg-warning"
+    },
+    critical: {
+      action: "border-danger/30 bg-danger/10 text-danger",
+      container: "border-danger/40 bg-danger/10",
+      dot: "bg-danger"
+    }
+  };
+
+  return tones[level];
 }
 
 function alertBorder(level: OperationAlert["level"]) {
