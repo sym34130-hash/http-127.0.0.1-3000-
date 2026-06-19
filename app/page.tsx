@@ -660,7 +660,7 @@ function GanttTimeline({
   const nowLeft = ((timelineMinute - WINDOW_START) / (WINDOW_END - WINDOW_START)) * TIMELINE_WIDTH;
 
   return (
-    <section className="border border-line bg-white">
+    <section className="min-w-0 overflow-hidden border border-line bg-white">
       <div className="flex items-center justify-between gap-3 border-b border-line px-4 py-3">
         <div className="flex items-center gap-2">
           <MapIcon className="h-5 w-5 text-muted" />
@@ -675,8 +675,8 @@ function GanttTimeline({
         </div>
       </div>
 
-      <div className="scrollbar-thin overflow-x-auto">
-        <div className="min-w-max">
+      <div className="scrollbar-thin max-w-full overflow-x-auto">
+        <div className="w-max min-w-full">
           <div className="flex border-b border-line bg-field">
             <div style={{ width: LEFT_LABEL_WIDTH }} />
             <div className="relative h-14" style={{ width: TIMELINE_WIDTH }}>
