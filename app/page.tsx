@@ -1418,7 +1418,11 @@ function buildDecisionStatus(
   const warningSoon =
     next.some((truck) => (truck.temps_attente ?? 0) > 0) ||
     currentSlot?.status === "sous_tension" ||
-    activeAlerts.some((alert) => alert.level === "warning");
+    activeAlerts.some(
+      (alert) =>
+        (alert.level === "warning" || alert.level === "critical") &&
+        isAlertInDecisionWindow(alert, nowMinute)
+    );
 
   if (warningSoon) {
     return {
@@ -1482,6 +1486,15 @@ function extractAlertWindow(alert: OperationAlert): { end: number; start: number
 function isAlertCurrent(alert: OperationAlert, nowMinute: number): boolean {
   const slotWindow = extractAlertWindow(alert);
   return !slotWindow || (slotWindow.start <= nowMinute && slotWindow.end > nowMinute);
+}
+
+function isAlertInDecisionWindow(alert: OperationAlert, nowMinute: number): boolean {
+  const slotWindow = extractAlertWindow(alert);
+  if (!slotWindow) {
+    return alert.id === "missing-data";
+  }
+
+  return slotWindow.end > nowMinute && slotWindow.start < nowMinute + SLOT_MINUTES;
 }
 
 function getWeekdayLabel(date: string): string {
