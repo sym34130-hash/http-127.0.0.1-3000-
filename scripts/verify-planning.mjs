@@ -25,9 +25,14 @@ const {
   computeAlerts,
   computeKpis,
   computeSlots,
+  filterTrucksByOperationWindow,
+  getOperationWindow,
   normalizeRows,
   uniqueFlux
 } = require(compiledPath);
+
+const morningWindow = getOperationWindow("morning");
+const afternoonWindow = getOperationWindow("afternoon");
 
 function row(code, arrival, duration = "20", extra = {}) {
   return {
@@ -58,8 +63,8 @@ assertScenario("ajout et buffer de 10 minutes", () => {
 assertScenario("arrivees simultanees et saturation des 5 portes", () => {
   const trucks = normalizeRows(Array.from({ length: 6 }, (_, index) => row(`S${index + 1}`, "13:00", "20")));
   const sixthTruck = trucks.find((truck) => truck.code_voyage === "S6");
-  const firstSlot = computeSlots(trucks)[0];
-  const alerts = computeAlerts(trucks, computeSlots(trucks));
+  const firstSlot = computeSlots(trucks, afternoonWindow)[0];
+  const alerts = computeAlerts(trucks, computeSlots(trucks, afternoonWindow));
 
   assert.equal(sixthTruck?.temps_attente, 30);
   assert.equal(Math.round(firstSlot.occupancyRate * 100), 100);
@@ -112,7 +117,25 @@ assertScenario("journee forte activite", () => {
 
   assert.equal(kpis.totalTrucks, 10);
   assert.ok(kpis.maxWait >= 30);
-  assert.ok(computeAlerts(trucks, computeSlots(trucks)).some((alert) => alert.level === "critical"));
+  assert.ok(computeAlerts(trucks, computeSlots(trucks, afternoonWindow)).some((alert) => alert.level === "critical"));
+});
+
+assertScenario("activite matin prise en compte", () => {
+  const trucks = normalizeRows([
+    row("AM1", "08:00", "20"),
+    row("AM2", "08:00", "20"),
+    row("PM1", "14:00", "20")
+  ]);
+  const morningTrucks = filterTrucksByOperationWindow(trucks, morningWindow);
+  const morningSlots = computeSlots(morningTrucks, morningWindow);
+  const morningSlot = morningSlots.find((slot) => slot.label === "08h00 - 08h30");
+  const morningKpis = computeKpis(morningTrucks, morningWindow);
+
+  assert.equal(trucks.find((truck) => truck.code_voyage === "AM1")?.statut, "sans_attente");
+  assert.equal(morningTrucks.length, 2);
+  assert.equal(morningSlot?.arrivals, 2);
+  assert.equal(morningSlot?.occupiedMinutes, 60);
+  assert.equal(morningKpis.totalTrucks, 2);
 });
 
 assertScenario("suppression complete du flux FRC visible", () => {
@@ -131,7 +154,7 @@ assertScenario("porte forcee depuis Google Sheet", () => {
 
 assertScenario("porte tampon hors capacite des 5 portes", () => {
   const trucks = normalizeRows([row("T1", "13:00", "20", { PORTE_SOUHAITEE: "TAMPON" })]);
-  const firstSlot = computeSlots(trucks)[0];
+  const firstSlot = computeSlots(trucks, afternoonWindow)[0];
 
   assert.equal(trucks[0].porte_affectee, "Tampon");
   assert.equal(trucks[0].dockIndex, 5);
