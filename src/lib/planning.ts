@@ -434,7 +434,7 @@ export function getCurrentMinuteInParis(): number {
 }
 
 export function getOperationalMinute(selectedDate: string): number {
-  return clamp(getCurrentMinuteInParis(), WINDOW_START, WINDOW_END);
+  return getCurrentMinuteInParis();
 }
 
 export function uniqueFlux(trucks: Truck[]): string[] {
