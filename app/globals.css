@@ -51,3 +51,7 @@ select {
     linear-gradient(to right, rgba(102, 115, 138, 0.12) 1px, transparent 1px);
   background-size: 180px 100%, 90px 100%;
 }
+
+.quai-map-frame {
+  contain: inline-size;
+}
