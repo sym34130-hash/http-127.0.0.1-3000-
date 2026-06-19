@@ -33,7 +33,9 @@ const FIELD_ALIASES = {
   semi: ["SEMI"],
   porteur: ["PORTEUR"],
   decharge: ["TDECHARCAMION"],
-  creneau: ["CRENEAUHORAIRE", "CRENAUHORAIRE"]
+  creneau: ["CRENEAUHORAIRE", "CRENAUHORAIRE"],
+  porteSouhaitee: ["PORTESOUHAITEE"],
+  prioriteQuai: ["PRIORITEQUAI"]
 } satisfies Record<string, string[]>;
 
 export function formatMinutes(minutes: number | null | undefined): string {
@@ -109,6 +111,9 @@ export function normalizeRows(rows: SheetRow[]): Truck[] {
     const baseDuration = durationEstimated ? 15 : Math.max(1, Math.round(parsedDuration));
     const duration = baseDuration + UNLOAD_BUFFER_MINUTES;
     const flux = buildFlux(normalizedRow);
+    const porteSouhaitee = cleanText(readField(normalizedRow, FIELD_ALIASES.porteSouhaitee));
+    const requestedDoor = parseRequestedDoor(porteSouhaitee);
+    const prioriteQuai = isMarked(readField(normalizedRow, FIELD_ALIASES.prioriteQuai));
     const dataIssues: string[] = [];
 
     if (arrivalMinutes === null) {
@@ -117,6 +122,10 @@ export function normalizeRows(rows: SheetRow[]): Truck[] {
 
     if (durationEstimated) {
       dataIssues.push("Temps de dechargement estime");
+    }
+
+    if (requestedDoor.issue) {
+      dataIssues.push(requestedDoor.issue);
     }
 
     const date = currentDate || "sans-date";
@@ -140,6 +149,10 @@ export function normalizeRows(rows: SheetRow[]): Truck[] {
       temps_dechargement_minutes: duration,
       durationEstimated,
       creneau_horaire: cleanText(readField(normalizedRow, FIELD_ALIASES.creneau)),
+      porte_souhaitee: porteSouhaitee,
+      porteForcee: requestedDoor.dockIndex,
+      porteTampon: requestedDoor.isTampon,
+      prioriteQuai,
       porte_affectee: null,
       dockIndex: null,
       heure_mise_a_quai: null,
@@ -171,7 +184,15 @@ export function assignDoorsByDate(trucks: Truck[]): Truck[] {
       .filter((truck) => truck.arrivalMinutes !== null)
       .sort((a, b) => {
         const arrivalDelta = (a.arrivalMinutes ?? 0) - (b.arrivalMinutes ?? 0);
-        return arrivalDelta === 0 ? a.sourceIndex - b.sourceIndex : arrivalDelta;
+        if (arrivalDelta !== 0) {
+          return arrivalDelta;
+        }
+
+        if (a.prioriteQuai !== b.prioriteQuai) {
+          return a.prioriteQuai ? -1 : 1;
+        }
+
+        return a.sourceIndex - b.sourceIndex;
       });
 
     const dockAvailableAt = Array.from({ length: DOCK_COUNT }, () => 0);
@@ -180,16 +201,30 @@ export function assignDoorsByDate(trucks: Truck[]): Truck[] {
     valid.forEach((truck) => {
       const arrival = truck.arrivalMinutes ?? 0;
       const immediateDockIndex = dockAvailableAt.findIndex((availableAt) => availableAt <= arrival);
-      const dockIndex =
-        immediateDockIndex >= 0 ? immediateDockIndex : indexOfEarliestDock(dockAvailableAt);
-      const miseAQuai = Math.max(arrival, dockAvailableAt[dockIndex]);
+      const dockIndex = truck.porteTampon
+        ? DOCK_COUNT
+        : truck.porteForcee !== null
+          ? truck.porteForcee
+          : immediateDockIndex >= 0
+            ? immediateDockIndex
+            : indexOfEarliestDock(dockAvailableAt);
+      const miseAQuai = truck.porteTampon ? arrival : Math.max(arrival, dockAvailableAt[dockIndex]);
       const fin = miseAQuai + truck.temps_dechargement_minutes;
       const wait = miseAQuai - arrival;
-      dockAvailableAt[dockIndex] = fin;
+      const dataIssues = [...truck.dataIssues];
+
+      if (truck.porteForcee !== null && wait > 0) {
+        dataIssues.push(`Conflit ${formatDoorLabel(dockIndex)} indisponible a l'arrivee`);
+      }
+
+      if (!truck.porteTampon) {
+        dockAvailableAt[dockIndex] = fin;
+      }
 
       plannedById.set(truck.id, {
         ...truck,
-        porte_affectee: `Porte ${dockIndex + 1}`,
+        dataIssues,
+        porte_affectee: formatDoorLabel(dockIndex),
         dockIndex,
         heure_mise_a_quai: formatMinutes(miseAQuai),
         miseAQuaiMinutes: miseAQuai,
@@ -254,18 +289,18 @@ export function computeSlots(trucks: Truck[]): SlotAnalysis[] {
         truck.arrivalMinutes >= start &&
         (index === 11 ? truck.arrivalMinutes <= end : truck.arrivalMinutes < end)
     );
-    const totalUnloadMinutes = arrivals.reduce(
-      (sum, truck) => sum + truck.temps_dechargement_minutes,
-      0
-    );
-    const occupiedMinutes = trucks.reduce((sum, truck) => {
+    const doorTrucks = trucks.filter((truck) => !truck.porteTampon);
+    const totalUnloadMinutes = arrivals
+      .filter((truck) => !truck.porteTampon)
+      .reduce((sum, truck) => sum + truck.temps_dechargement_minutes, 0);
+    const occupiedMinutes = doorTrucks.reduce((sum, truck) => {
       if (truck.miseAQuaiMinutes === null || truck.finDechargementMinutes === null) {
         return sum;
       }
 
       return sum + overlapMinutes(truck.miseAQuaiMinutes, truck.finDechargementMinutes, start, end);
     }, 0);
-    const backlogMinutes = trucks.reduce((sum, truck) => {
+    const backlogMinutes = doorTrucks.reduce((sum, truck) => {
       if (
         truck.arrivalMinutes === null ||
         truck.miseAQuaiMinutes === null ||
@@ -276,7 +311,7 @@ export function computeSlots(trucks: Truck[]): SlotAnalysis[] {
 
       return sum + overlapMinutes(truck.arrivalMinutes, truck.miseAQuaiMinutes, start, end);
     }, 0);
-    const waitingTrucks = trucks.filter(
+    const waitingTrucks = doorTrucks.filter(
       (truck) =>
         truck.arrivalMinutes !== null &&
         truck.miseAQuaiMinutes !== null &&
@@ -312,7 +347,7 @@ export function computeKpis(trucks: Truck[]): KpiSet {
     .slice()
     .sort((a, b) => b.occupancyRate - a.occupancyRate || b.arrivals - a.arrivals)[0];
   const occupiedMinutes = trucks.reduce((sum, truck) => {
-    if (truck.miseAQuaiMinutes === null || truck.finDechargementMinutes === null) {
+    if (truck.porteTampon || truck.miseAQuaiMinutes === null || truck.finDechargementMinutes === null) {
       return sum;
     }
 
@@ -341,6 +376,10 @@ export function computeAlerts(trucks: Truck[], slots: SlotAnalysis[]): Operation
   const backlogSlots = slots.filter((slot) => slot.backlogMinutes >= 5);
   const peakSlots = slots.filter((slot) => slot.arrivals > 5);
   const highWait = trucks.filter((truck) => (truck.temps_attente ?? 0) >= 15);
+  const forcedDoorConflicts = trucks.filter((truck) =>
+    truck.dataIssues.some((issue) => issue.startsWith("Conflit Porte"))
+  );
+  const priorityTrucks = trucks.filter((truck) => truck.prioriteQuai || truck.porteTampon);
   const maxQueue = computeMaxQueueDepth(trucks);
   const incomplete = trucks.filter((truck) => truck.arrivalBand === "missing");
   const estimated = trucks.filter((truck) => truck.durationEstimated);
@@ -378,6 +417,24 @@ export function computeAlerts(trucks: Truck[], slots: SlotAnalysis[]): Operation
       level: "warning",
       title: "Attente elevee",
       detail: `${highWait.length} camion(s) attendent au moins 15 min.`
+    });
+  }
+
+  if (forcedDoorConflicts.length > 0) {
+    alerts.push({
+      id: "forced-door-conflict",
+      level: "warning",
+      title: "Conflit porte forcee",
+      detail: `${forcedDoorConflicts.length} camion(s) forces sur une porte deja occupee a l'arrivee.`
+    });
+  }
+
+  if (priorityTrucks.length > 0) {
+    alerts.push({
+      id: "priority-quai",
+      level: "info",
+      title: "Priorite quai",
+      detail: `${priorityTrucks.length} camion(s) avec priorite ou porte Tampon.`
     });
   }
 
@@ -553,6 +610,33 @@ function parseNumber(value: string | number | null | undefined): number | null {
 function isMarked(value: string): boolean {
   const clean = cleanText(value).toLowerCase();
   return clean === "x" || clean === "1" || clean === "oui" || clean === "true";
+}
+
+function parseRequestedDoor(value: string): { dockIndex: number | null; isTampon: boolean; issue?: string } {
+  const clean = normalizeHeader(value);
+
+  if (!clean) {
+    return { dockIndex: null, isTampon: false };
+  }
+
+  if (clean === "TAMPON" || clean === "PORTETAMPON") {
+    return { dockIndex: null, isTampon: true };
+  }
+
+  const match = clean.match(/^(?:PORTE)?([1-5])$/);
+  if (match) {
+    return { dockIndex: Number(match[1]) - 1, isTampon: false };
+  }
+
+  return {
+    dockIndex: null,
+    isTampon: false,
+    issue: `Porte souhaitee invalide: ${value}`
+  };
+}
+
+function formatDoorLabel(dockIndex: number): string {
+  return dockIndex === DOCK_COUNT ? "Tampon" : `Porte ${dockIndex + 1}`;
 }
 
 function buildFlux(row: Record<string, string>): string[] {
