@@ -763,8 +763,10 @@ function TruckBlock({
     `Palettes ${truck.nb_palettes ?? "-"}`,
     `Compteur ${truck.compteur_local || "-"}`,
     `Flux ${truck.type_flux}`,
+    truck.porte_souhaitee ? `Porte souhaitee ${truck.porte_souhaitee}` : "",
+    truck.prioriteQuai ? "Priorite quai" : "",
     `Attente ${formatDuration(wait)}`
-  ].join("\n");
+  ].filter(Boolean).join("\n");
 
   return (
     <div
@@ -792,9 +794,17 @@ function TruckBlock({
       ) : null}
       <div className="relative z-10 flex items-center justify-between gap-1">
         <strong className="truncate text-xs">{truck.code_voyage}</strong>
-        {truck.compteur_local ? (
-          <span className="shrink-0 bg-white/55 px-1 text-[10px] font-semibold">#{truck.compteur_local}</span>
-        ) : null}
+        <div className="flex shrink-0 items-center gap-1">
+          {truck.prioriteQuai ? (
+            <span className="bg-ink px-1 text-[10px] font-semibold text-white">PRIO</span>
+          ) : null}
+          {truck.porteTampon ? (
+            <span className="bg-warning px-1 text-[10px] font-semibold text-white">TAMPON</span>
+          ) : null}
+          {truck.compteur_local ? (
+            <span className="bg-white/55 px-1 text-[10px] font-semibold">#{truck.compteur_local}</span>
+          ) : null}
+        </div>
       </div>
       <div className="relative z-10 mt-0.5 grid grid-cols-2 gap-x-2 gap-y-0.5 leading-tight">
         <span className="truncate">Arr. {truck.heure_arrivee || "-"}</span>
@@ -814,6 +824,8 @@ function Legend() {
     { label: "Sans attente", className: "bg-success" },
     { label: "Attente < 15 min", className: "bg-warning" },
     { label: "Attente >= 15 min", className: "bg-danger" },
+    { label: "Priorite quai", className: "bg-ink/20" },
+    { label: "Porte Tampon", className: "bg-warning/30" },
     { label: "Zone hachuree = attente integree", className: "bg-warning/30" },
     { label: "Termine", className: "bg-done" },
     { label: "Incomplet", className: "bg-muted" }
@@ -1321,6 +1333,7 @@ type TimelineRow = {
 function buildTimelineRows(trucks: Truck[]): TimelineRow[] {
   const rowMap = new Map<string, TimelineItem[]>();
   Array.from({ length: DOCK_COUNT }, (_, index) => `dock-${index}`).forEach((key) => rowMap.set(key, []));
+  rowMap.set("tampon", []);
 
   trucks.forEach((truck) => {
     if (truck.miseAQuaiMinutes !== null && truck.finDechargementMinutes !== null && truck.dockIndex !== null) {
@@ -1329,15 +1342,17 @@ function buildTimelineRows(trucks: Truck[]): TimelineRow[] {
       const end = Math.min(WINDOW_END, truck.finDechargementMinutes);
 
       if (end > start) {
-        const rowKey = `dock-${truck.dockIndex}`;
+        const rowKey = truck.porteTampon ? "tampon" : `dock-${truck.dockIndex}`;
         rowMap.get(rowKey)?.push(createTimelineItem(truck, rowKey, start, end));
       }
     }
   });
 
-  return Array.from({ length: DOCK_COUNT }, (_, index) =>
+  const dockRows = Array.from({ length: DOCK_COUNT }, (_, index) =>
     buildTimelineRow(`dock-${index}`, `Porte ${index + 1}`, rowMap)
   );
+
+  return [...dockRows, buildTimelineRow("tampon", "Tampon", rowMap)];
 }
 
 function buildWeekSummary(trucks: Truck[]): DaySummary[] {
@@ -1565,6 +1580,14 @@ function getTruckPalette(truck: Truck, done: boolean) {
 
   if (done) {
     return { className: "border-done/40 bg-done/15 text-ink" };
+  }
+
+  if (truck.porteTampon) {
+    return { className: "border-warning/70 bg-warning/20 text-ink" };
+  }
+
+  if (truck.prioriteQuai) {
+    return { className: "border-ink/70 bg-ink/10 text-ink" };
   }
 
   if (truck.statut === "attente_longue") {
