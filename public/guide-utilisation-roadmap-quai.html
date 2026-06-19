@@ -724,18 +724,36 @@
           <strong>Point primordial :</strong> le site détecte les onglets opérationnels à partir de leur structure,
           de leur date et de leur nom. Il faut donc créer les nouveaux jours à partir de l’onglet
           <span class="tag black">MODEL</span>, puis renommer chaque onglet avec le
-          <strong>nom du jour</strong> et la <strong>date</strong>.
+          <strong>nom du jour</strong> et la <strong>date</strong>. Pour que l’onglet apparaisse correctement sur
+          le site, il faut aussi qu’au moins <strong>une ligne de tournée soit remplie correctement</strong>.
         </div>
 
         <ol class="steps">
           <li>
-            <strong>Créer un nouvel onglet.</strong><br />
-            Dans le Google Sheet, créer l’onglet correspondant au nouveau jour à préparer.
+            <strong>Aller sur l’onglet MODEL.</strong><br />
+            Ouvrir l’onglet <strong>MODEL</strong> dans le Google Sheet. C’est la base à copier pour chaque nouveau
+            jour.
           </li>
           <li>
-            <strong>Copier l’onglet MODEL.</strong><br />
-            Reprendre la structure de l’onglet <strong>MODEL</strong> dans le nouvel onglet pour conserver les
-            mêmes colonnes, les mêmes formules et le bon format de saisie.
+            <strong>Copier toute la page modèle.</strong><br />
+            Cliquer dans la feuille, faire <span class="tag black">CTRL+A</span> pour sélectionner toute la page,
+            puis <span class="tag black">CTRL+C</span> pour copier l’ensemble du modèle.
+          </li>
+          <li>
+            <strong>Créer le nouvel onglet.</strong><br />
+            Créer l’onglet correspondant au nouveau jour à préparer.
+          </li>
+          <li>
+            <strong>Coller le modèle en A1.</strong><br />
+            Cliquer en cellule <span class="tag blue">A1</span> du nouvel onglet, puis faire
+            <span class="tag black">CTRL+V</span>. Le nouvel onglet doit reprendre toutes les colonnes et toutes
+            les formules du modèle.
+          </li>
+          <li>
+            <strong>Renommer l’onglet avec le bon jour et la bonne date.</strong><br />
+            Le nom de l’onglet doit contenir le nom du jour et la date, par exemple
+            <span class="tag blue">Lundi 27</span>, <span class="tag blue">Mardi 28</span> ou
+            <span class="tag blue">Vendredi 01</span>.
           </li>
           <li>
             <strong>Mettre à jour la colonne A “Jour”.</strong><br />
@@ -743,14 +761,9 @@
             Google Sheets. Ne pas saisir une date approximative ou un texte libre.
           </li>
           <li>
-            <strong>Renommer l’onglet.</strong><br />
-            Le nom de l’onglet doit contenir le nom du jour et la date, par exemple
-            <span class="tag blue">Lundi 27</span>, <span class="tag blue">Mardi 28</span> ou
-            <span class="tag blue">Vendredi 01</span>.
-          </li>
-          <li>
-            <strong>Remplir les tournées.</strong><br />
-            Ajouter les lignes de la journée en respectant les règles habituelles : heure au format
+            <strong>Remplir au moins une ligne correctement.</strong><br />
+            Pour que la nouvelle date apparaisse sur le site, il faut au minimum une ligne exploitable : code tournée,
+            heure au format
             <span class="tag blue">13:05</span>, flux/véhicule avec <span class="tag blue">X</span>, colonnes O/P
             non modifiées.
           </li>
@@ -772,8 +785,13 @@
           <tbody>
             <tr>
               <td><strong>Onglet source</strong></td>
-              <td>Partir de <span class="tag black">MODEL</span>.</td>
+              <td>Partir de <span class="tag black">MODEL</span>, puis copier toute la feuille avec <span class="tag black">CTRL+A</span> et <span class="tag black">CTRL+C</span>.</td>
               <td>Garantit que les colonnes, formats et formules restent compatibles avec l’application.</td>
+            </tr>
+            <tr>
+              <td><strong>Collage</strong></td>
+              <td>Créer le nouvel onglet, cliquer en <span class="tag blue">A1</span>, puis faire <span class="tag black">CTRL+V</span>.</td>
+              <td>Évite de coller le modèle au mauvais endroit et de décaler les colonnes.</td>
             </tr>
             <tr>
               <td><strong>Colonne A - Jour</strong></td>
@@ -792,7 +810,7 @@
             </tr>
             <tr>
               <td><strong>Nouvelles semaines</strong></td>
-              <td>Créer un onglet par jour à partir de MODEL.</td>
+              <td>Créer un onglet par jour à partir de MODEL et remplir au moins une ligne correctement.</td>
               <td>Le site récupère automatiquement les nouvelles dates sans intervention technique.</td>
             </tr>
           </tbody>
@@ -809,7 +827,8 @@
         <div class="warning" style="margin-top: 14px">
           <strong>À éviter :</strong> ne pas créer un onglet vide, ne pas changer les titres de colonnes, ne pas
           écrire dans les colonnes O/P et ne pas renommer un onglet uniquement “Semaine 18”. Le nom doit rester
-          compréhensible jour par jour.
+          compréhensible jour par jour. Un onglet sans ligne correctement remplie peut ne pas apparaître dans
+          Roadmap Quai.
         </div>
       </section>
 
@@ -1134,7 +1153,11 @@
           </div>
           <div class="card">
             <h3>Ajouter une semaine</h3>
-            <p>Créer les nouveaux onglets depuis <strong>MODEL</strong>, mettre la bonne date en colonne A “Jour”, puis renommer chaque onglet avec le nom du jour et la date.</p>
+            <p>
+              Aller sur <strong>MODEL</strong>, faire <strong>CTRL+A</strong> puis <strong>CTRL+C</strong>, créer le
+              nouvel onglet, cliquer en <strong>A1</strong>, faire <strong>CTRL+V</strong>, puis renommer l’onglet
+              avec le bon jour et la bonne date.
+            </p>
           </div>
           <div class="card">
             <h3>Modifier une tournée</h3>
@@ -1170,8 +1193,10 @@
               <li>Flux et véhicule marqués uniquement par X : SEC, FRAIS, SURGELE, SEMI, PORTEUR.</li>
               <li>Colonnes O et P laissées intactes : elles sont alimentées par formule.</li>
               <li>Colonnes M et N utilisées uniquement si nécessaire.</li>
-              <li>Nouveaux onglets créés depuis MODEL, avec la date correcte en colonne A “Jour”.</li>
+              <li>Nouveaux onglets créés depuis MODEL : CTRL+A, CTRL+C, nouvel onglet, collage en A1 avec CTRL+V.</li>
+              <li>Date correcte en colonne A “Jour”, choisie dans le calendrier Google Sheets.</li>
               <li>Nommer les onglets avec le nom du jour et la date : Lundi 27, Mardi 28, etc.</li>
+              <li>Remplir au moins une ligne correctement pour que la date apparaisse sur le site.</li>
               <li>Suppression des lignes annulées pour éviter les faux camions.</li>
               <li>Vérifier “Données à corriger” après chaque grosse mise à jour.</li>
             </ul>
@@ -1187,6 +1212,7 @@
               <li>Saisir des heures ambiguës, incomplètes ou au format 13h05.</li>
               <li>Mettre OUI dans SEC/FRAIS/SURGELE ou SEMI/PORTEUR au lieu de X.</li>
               <li>Créer une nouvelle semaine avec des onglets vides ou mal nommés.</li>
+              <li>Coller le modèle ailleurs qu’en cellule A1.</li>
               <li>Changer la date en texte libre au lieu de la choisir dans le calendrier Google Sheets.</li>
               <li>Laisser une ligne incomplète en pensant qu’elle sera ignorée.</li>
             </ul>
@@ -1215,7 +1241,11 @@
           </div>
           <div class="card">
             <h3>Pourquoi une nouvelle date n’apparaît pas dans le site ?</h3>
-            <p>Vérifier que l’onglet a bien été créé depuis MODEL, que la colonne A “Jour” contient la bonne date choisie dans le calendrier, et que l’onglet est renommé avec le nom du jour et la date.</p>
+            <p>
+              Vérifier que l’onglet a bien été copié depuis MODEL avec CTRL+A / CTRL+C puis collé en A1 avec CTRL+V,
+              que la colonne A “Jour” contient la bonne date choisie dans le calendrier, que l’onglet est renommé
+              avec le nom du jour et la date, et qu’au moins une ligne est correctement remplie.
+            </p>
           </div>
           <div class="card">
             <h3>À quoi sert la MAP QUAI si j’ai déjà “Décision quai” ?</h3>
