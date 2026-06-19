@@ -610,7 +610,8 @@ function GanttTimeline({
   const rows = useMemo(() => buildTimelineRows(trucks), [trucks]);
   const slots = useMemo(() => computeSlots(trucks), [trucks]);
   const isToday = selectedDate === getTodayInParis();
-  const nowLeft = ((nowMinute - WINDOW_START) / (WINDOW_END - WINDOW_START)) * TIMELINE_WIDTH;
+  const timelineMinute = Math.min(WINDOW_END, Math.max(WINDOW_START, nowMinute));
+  const nowLeft = ((timelineMinute - WINDOW_START) / (WINDOW_END - WINDOW_START)) * TIMELINE_WIDTH;
 
   return (
     <section className="border border-line bg-white">
