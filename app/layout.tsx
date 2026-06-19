@@ -3,7 +3,10 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Roadmap Quai",
-  description: "Pilotage dynamique des portes de quai entre 13h00 et 19h00"
+  description: "Pilotage dynamique des portes de quai entre 13h00 et 19h00",
+  icons: {
+    icon: "/icon.svg"
+  }
 };
 
 export default function RootLayout({
