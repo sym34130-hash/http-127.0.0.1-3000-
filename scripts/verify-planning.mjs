@@ -122,5 +122,45 @@ assertScenario("suppression complete du flux FRC visible", () => {
   assert.deepEqual(uniqueFlux(trucks), ["Standard"]);
 });
 
+assertScenario("porte forcee depuis Google Sheet", () => {
+  const trucks = normalizeRows([row("P1", "13:00", "20", { PORTE_SOUHAITEE: "3" })]);
+
+  assert.equal(trucks[0].porte_affectee, "Porte 3");
+  assert.equal(trucks[0].dockIndex, 2);
+});
+
+assertScenario("porte tampon hors capacite des 5 portes", () => {
+  const trucks = normalizeRows([row("T1", "13:00", "20", { PORTE_SOUHAITEE: "TAMPON" })]);
+  const firstSlot = computeSlots(trucks)[0];
+
+  assert.equal(trucks[0].porte_affectee, "Tampon");
+  assert.equal(trucks[0].dockIndex, 5);
+  assert.equal(firstSlot.occupiedMinutes, 0);
+});
+
+assertScenario("priorite quai a horaire identique", () => {
+  const trucks = normalizeRows([
+    ...Array.from({ length: 5 }, (_, index) => row(`N${index + 1}`, "13:00", "20")),
+    row("PRIO", "13:00", "20", { PRIORITE_QUAI: "OUI" })
+  ]);
+  const priorityTruck = trucks.find((truck) => truck.code_voyage === "PRIO");
+
+  assert.equal(priorityTruck?.prioriteQuai, true);
+  assert.equal(priorityTruck?.temps_attente, 0);
+});
+
+assertScenario("conflit de porte forcee signale", () => {
+  const trucks = normalizeRows([
+    row("C1", "13:00", "20", { PORTE_SOUHAITEE: "1" }),
+    row("C2", "13:00", "20", { PORTE_SOUHAITEE: "1" })
+  ]);
+  const secondTruck = trucks.find((truck) => truck.code_voyage === "C2");
+  const alerts = computeAlerts(trucks, computeSlots(trucks));
+
+  assert.equal(secondTruck?.temps_attente, 30);
+  assert.ok(secondTruck?.dataIssues.some((issue) => issue.includes("Conflit Porte 1")));
+  assert.ok(alerts.some((alert) => alert.title === "Conflit porte forcee"));
+});
+
 fs.rmSync(tempDir, { force: true, recursive: true });
 console.log("Verification planning terminee.");
