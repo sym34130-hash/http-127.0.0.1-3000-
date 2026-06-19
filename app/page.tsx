@@ -67,6 +67,11 @@ type DecisionStatus = {
   level: DecisionLevel;
   title: string;
 };
+type DateGroup = {
+  dates: string[];
+  label: string;
+  weekStart: string;
+};
 
 const TIMELINE_WIDTH = 1080;
 const BLOCK_HEIGHT = 64;
@@ -111,14 +116,17 @@ export default function Page() {
       hasLoadedDataRef.current = true;
       setLoadState("ready");
       setFilters((current) => {
-        if (current.date || payload.dates.length === 0) {
+        if (payload.dates.length === 0) {
           return current;
         }
 
-        const today = getTodayInParis();
+        if (current.date && payload.dates.includes(current.date)) {
+          return current;
+        }
+
         return {
           ...current,
-          date: payload.dates.includes(today) ? today : payload.dates[0]
+          date: chooseDefaultDate(payload.dates)
         };
       });
     } catch (loadError) {
@@ -156,7 +164,10 @@ export default function Page() {
   const kpis = useMemo(() => computeKpis(visibleTrucks), [visibleTrucks]);
   const alerts = useMemo(() => computeAlerts(visibleTrucks, slots), [visibleTrucks, slots]);
   const fluxOptions = useMemo(() => uniqueFlux(dateTrucks), [dateTrucks]);
-  const weekSummary = useMemo(() => buildWeekSummary(data?.trucks ?? []), [data?.trucks]);
+  const weekSummary = useMemo(
+    () => buildWeekSummary(data?.trucks ?? [], selectedDate),
+    [data?.trucks, selectedDate]
+  );
   const alertGroups = useMemo(
     () => splitOperationAlerts(alerts, nowMinute, visibleTrucks),
     [alerts, nowMinute, visibleTrucks]
@@ -324,6 +335,8 @@ function FilterBar({
   fluxOptions: string[];
   onChange: (next: Filters | ((current: Filters) => Filters)) => void;
 }) {
+  const dateGroups = useMemo(() => groupDatesByWeek(dates), [dates]);
+
   const update = <Key extends keyof Filters>(key: Key, value: Filters[Key]) => {
     onChange((current) => ({ ...current, [key]: value }));
   };
@@ -340,10 +353,14 @@ function FilterBar({
             value={filters.date}
           >
             {dates.length === 0 ? <option value="">Aucune date</option> : null}
-            {dates.map((date) => (
-              <option key={date} value={date}>
-                {date === "sans-date" ? "Sans date" : formatDateFr(date)}
-              </option>
+            {dateGroups.map((group) => (
+              <optgroup key={group.weekStart} label={group.label}>
+                {group.dates.map((date) => (
+                  <option key={date} value={date}>
+                    {date === "sans-date" ? "Sans date" : formatDateFr(date)}
+                  </option>
+                ))}
+              </optgroup>
             ))}
           </select>
         </div>
@@ -1411,8 +1428,21 @@ function buildTimelineRows(trucks: Truck[]): TimelineRow[] {
   return [...dockRows, buildTimelineRow("tampon", "Tampon", rowMap)];
 }
 
-function buildWeekSummary(trucks: Truck[]): DaySummary[] {
+function chooseDefaultDate(dates: string[]): string {
+  const validDates = dates.filter(isIsoDate);
+  const today = getTodayInParis();
+  const upcoming = validDates.find((date) => date >= today);
+
+  if (validDates.includes(today)) {
+    return today;
+  }
+
+  return upcoming ?? validDates[validDates.length - 1] ?? dates[0] ?? "";
+}
+
+function buildWeekSummary(trucks: Truck[], selectedDate: string): DaySummary[] {
   const byDate = new Map<string, Truck[]>();
+  const selectedWeekStart = isIsoDate(selectedDate) ? getWeekStartIso(selectedDate) : "";
 
   trucks.forEach((truck) => {
     const dateTrucks = byDate.get(truck.date) ?? [];
@@ -1421,6 +1451,13 @@ function buildWeekSummary(trucks: Truck[]): DaySummary[] {
   });
 
   return Array.from(byDate.entries())
+    .filter(([date]) => {
+      if (selectedDate === "sans-date") {
+        return date === "sans-date";
+      }
+
+      return !selectedWeekStart || (isIsoDate(date) && getWeekStartIso(date) === selectedWeekStart);
+    })
     .sort(([dateA], [dateB]) => dateA.localeCompare(dateB))
     .map(([date, dayTrucks]) => {
       const kpis = computeKpis(dayTrucks);
@@ -1434,6 +1471,69 @@ function buildWeekSummary(trucks: Truck[]): DaySummary[] {
         waiting: kpis.trucksWithWait
       };
     });
+}
+
+function groupDatesByWeek(dates: string[]): DateGroup[] {
+  const groups = new Map<string, string[]>();
+  const withoutDate: string[] = [];
+
+  dates.forEach((date) => {
+    if (!isIsoDate(date)) {
+      withoutDate.push(date);
+      return;
+    }
+
+    const weekStart = getWeekStartIso(date);
+    const weekDates = groups.get(weekStart) ?? [];
+    weekDates.push(date);
+    groups.set(weekStart, weekDates);
+  });
+
+  const groupedDates = Array.from(groups.entries())
+    .sort(([weekA], [weekB]) => weekA.localeCompare(weekB))
+    .map(([weekStart, weekDates]) => ({
+      weekStart,
+      label: formatWeekLabel(weekStart),
+      dates: weekDates.sort()
+    }));
+
+  return withoutDate.length
+    ? [...groupedDates, { weekStart: "sans-date", label: "Sans date", dates: withoutDate }]
+    : groupedDates;
+}
+
+function formatWeekLabel(weekStart: string): string {
+  const weekEnd = addDays(weekStart, 6);
+  return `Semaine du ${formatDateFr(weekStart)} au ${formatDateFr(weekEnd)}`;
+}
+
+function getWeekStartIso(date: string): string {
+  const parsed = parseIsoDateUtc(date);
+  const day = parsed.getUTCDay();
+  const delta = day === 0 ? -6 : 1 - day;
+  parsed.setUTCDate(parsed.getUTCDate() + delta);
+
+  return toIsoDate(parsed);
+}
+
+function addDays(date: string, days: number): string {
+  const parsed = parseIsoDateUtc(date);
+  parsed.setUTCDate(parsed.getUTCDate() + days);
+
+  return toIsoDate(parsed);
+}
+
+function parseIsoDateUtc(date: string): Date {
+  const [year, month, day] = date.split("-").map(Number);
+  return new Date(Date.UTC(year, month - 1, day));
+}
+
+function toIsoDate(date: Date): string {
+  return date.toISOString().slice(0, 10);
+}
+
+function isIsoDate(date: string): boolean {
+  return /^\d{4}-\d{2}-\d{2}$/.test(date);
 }
 
 function splitOperationAlerts(alerts: OperationAlert[], nowMinute: number, trucks: Truck[]): AlertGroups {
