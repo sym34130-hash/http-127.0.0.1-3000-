@@ -27,7 +27,6 @@ import {
   Cell,
   ComposedChart,
   Line,
-  ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis
@@ -1352,6 +1351,8 @@ function MiniTruckList({
 function SlotChart({ slots }: { slots: SlotAnalysis[] }) {
   const chartFrameRef = useRef<HTMLDivElement | null>(null);
   const [chartSize, setChartSize] = useState({ height: 0, width: 0 });
+  const chartWidth = Math.max(320, chartSize.width - 32);
+  const chartHeight = Math.max(260, chartSize.height - 32);
   const data = slots.map((slot) => ({
     label: slot.label.replace(" - ", "\n"),
     arrivals: slot.arrivals,
@@ -1368,10 +1369,16 @@ function SlotChart({ slots }: { slots: SlotAnalysis[] }) {
     }
 
     const refreshSize = () => {
-      setChartSize({
-        height: frame.clientHeight,
-        width: frame.clientWidth
-      });
+      const rect = frame.getBoundingClientRect();
+
+      const nextSize = {
+        height: Math.floor(rect.height),
+        width: Math.floor(rect.width)
+      };
+
+      setChartSize((current) =>
+        current.height === nextSize.height && current.width === nextSize.width ? current : nextSize
+      );
     };
 
     refreshSize();
@@ -1391,21 +1398,24 @@ function SlotChart({ slots }: { slots: SlotAnalysis[] }) {
       </div>
       <div className="h-80 p-4" ref={chartFrameRef}>
         {isChartReady ? (
-          <ResponsiveContainer height="100%" width="100%">
-            <ComposedChart data={data} margin={{ left: -20, right: 8, top: 8, bottom: 8 }}>
-              <CartesianGrid stroke="#d9e1ec" strokeDasharray="3 3" />
-              <XAxis dataKey="label" fontSize={11} interval={0} tickLine={false} />
-              <YAxis yAxisId="left" fontSize={11} tickLine={false} />
-              <YAxis yAxisId="right" orientation="right" fontSize={11} tickLine={false} />
-              <Tooltip />
-              <Bar dataKey="occupation" name="Occupation reelle %" yAxisId="left">
-                {data.map((entry) => (
-                  <Cell fill={slotHex(entry.status)} key={entry.label} />
-                ))}
-              </Bar>
-              <Line dataKey="arrivals" name="Arrivees" stroke="#172033" strokeWidth={2} yAxisId="right" />
-            </ComposedChart>
-          </ResponsiveContainer>
+          <ComposedChart
+            data={data}
+            height={chartHeight}
+            margin={{ left: -20, right: 8, top: 8, bottom: 8 }}
+            width={chartWidth}
+          >
+            <CartesianGrid stroke="#d9e1ec" strokeDasharray="3 3" />
+            <XAxis dataKey="label" fontSize={11} interval={0} tickLine={false} />
+            <YAxis yAxisId="left" fontSize={11} tickLine={false} />
+            <YAxis yAxisId="right" orientation="right" fontSize={11} tickLine={false} />
+            <Tooltip />
+            <Bar dataKey="occupation" name="Occupation reelle %" yAxisId="left">
+              {data.map((entry) => (
+                <Cell fill={slotHex(entry.status)} key={entry.label} />
+              ))}
+            </Bar>
+            <Line dataKey="arrivals" name="Arrivees" stroke="#172033" strokeWidth={2} yAxisId="right" />
+          </ComposedChart>
         ) : (
           <div className="flex h-full items-center justify-center border border-line bg-field text-sm text-muted">
             Chargement du graphique...
