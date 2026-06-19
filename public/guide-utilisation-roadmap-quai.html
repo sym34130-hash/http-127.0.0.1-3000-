@@ -57,6 +57,36 @@
         text-transform: uppercase;
       }
 
+      .brand-line {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        align-items: center;
+        margin-bottom: 18px;
+      }
+
+      .stef-mark {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 86px;
+        min-height: 42px;
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        background: #0056a8;
+        padding: 8px 14px;
+        color: var(--white);
+        font-size: 20px;
+        font-weight: 900;
+        letter-spacing: 0.04em;
+      }
+
+      .brand-context {
+        color: rgba(255, 255, 255, 0.72);
+        font-size: 14px;
+        font-weight: 800;
+        text-transform: uppercase;
+      }
+
       h1 {
         margin: 0;
         font-size: 38px;
@@ -435,6 +465,10 @@
   <body>
     <main class="page">
       <header>
+        <div class="brand-line" aria-label="Identité">
+          <div class="stef-mark">STEF</div>
+          <div class="brand-context">Pilotage exploitation quai</div>
+        </div>
         <p class="eyebrow">Guide opérationnel équipes quai</p>
         <h1>Roadmap Quai</h1>
         <p>
