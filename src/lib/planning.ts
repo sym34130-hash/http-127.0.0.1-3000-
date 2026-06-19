@@ -17,6 +17,42 @@ export const SLOT_CAPACITY = DOCK_COUNT * SLOT_MINUTES;
 export const DAY_CAPACITY = DOCK_COUNT * (WINDOW_END - WINDOW_START);
 export const UNLOAD_BUFFER_MINUTES = 10;
 
+export type OperationWindowId = "morning" | "afternoon" | "day";
+
+export type OperationWindow = {
+  id: OperationWindowId;
+  label: string;
+  shortLabel: string;
+  start: number;
+  end: number;
+};
+
+export const OPERATION_WINDOWS: OperationWindow[] = [
+  {
+    id: "morning",
+    label: "Matin",
+    shortLabel: "06h00 - 13h00",
+    start: 6 * 60,
+    end: 13 * 60
+  },
+  {
+    id: "afternoon",
+    label: "Apres-midi",
+    shortLabel: "13h00 - 19h00",
+    start: WINDOW_START,
+    end: WINDOW_END
+  },
+  {
+    id: "day",
+    label: "Journee",
+    shortLabel: "24h",
+    start: 0,
+    end: 24 * 60
+  }
+];
+
+export const DEFAULT_OPERATION_WINDOW = OPERATION_WINDOWS[2];
+
 type SheetRow = Record<string, string | number | null | undefined>;
 
 const FIELD_ALIASES = {
@@ -279,15 +315,63 @@ export function applyFilters(trucks: Truck[], filters: Filters): Truck[] {
   });
 }
 
-export function computeSlots(trucks: Truck[]): SlotAnalysis[] {
-  return Array.from({ length: (WINDOW_END - WINDOW_START) / SLOT_MINUTES }, (_, index) => {
-    const start = WINDOW_START + index * SLOT_MINUTES;
-    const end = start + SLOT_MINUTES;
+export function getOperationWindow(id: OperationWindowId): OperationWindow {
+  return OPERATION_WINDOWS.find((window) => window.id === id) ?? DEFAULT_OPERATION_WINDOW;
+}
+
+export function formatOperationWindow(window: OperationWindow): string {
+  return window.id === "day" ? "00h00 - 24h00" : `${formatMinutes(window.start)} - ${formatMinutes(window.end)}`;
+}
+
+export function isMinuteInWindow(minute: number, window: OperationWindow): boolean {
+  return minute >= window.start && minute < window.end;
+}
+
+export function isTruckInOperationWindow(truck: Truck, window: OperationWindow): boolean {
+  if (window.id === "day") {
+    return true;
+  }
+
+  if (truck.arrivalMinutes !== null && isMinuteInWindow(truck.arrivalMinutes, window)) {
+    return true;
+  }
+
+  if (
+    truck.miseAQuaiMinutes !== null &&
+    truck.finDechargementMinutes !== null &&
+    overlapMinutes(truck.miseAQuaiMinutes, truck.finDechargementMinutes, window.start, window.end) > 0
+  ) {
+    return true;
+  }
+
+  if (
+    truck.arrivalMinutes !== null &&
+    truck.miseAQuaiMinutes !== null &&
+    truck.miseAQuaiMinutes > truck.arrivalMinutes &&
+    overlapMinutes(truck.arrivalMinutes, truck.miseAQuaiMinutes, window.start, window.end) > 0
+  ) {
+    return true;
+  }
+
+  return false;
+}
+
+export function filterTrucksByOperationWindow(trucks: Truck[], window: OperationWindow): Truck[] {
+  return trucks.filter((truck) => isTruckInOperationWindow(truck, window));
+}
+
+export function computeSlots(trucks: Truck[], window: OperationWindow = DEFAULT_OPERATION_WINDOW): SlotAnalysis[] {
+  const slotCount = Math.ceil((window.end - window.start) / SLOT_MINUTES);
+
+  return Array.from({ length: slotCount }, (_, index) => {
+    const start = window.start + index * SLOT_MINUTES;
+    const end = Math.min(window.end, start + SLOT_MINUTES);
+    const isLastSlot = index === slotCount - 1;
     const arrivals = trucks.filter(
       (truck) =>
         truck.arrivalMinutes !== null &&
         truck.arrivalMinutes >= start &&
-        (index === 11 ? truck.arrivalMinutes <= end : truck.arrivalMinutes < end)
+        (isLastSlot ? truck.arrivalMinutes <= end : truck.arrivalMinutes < end)
     );
     const doorTrucks = trucks.filter((truck) => !truck.porteTampon);
     const totalUnloadMinutes = arrivals
@@ -337,12 +421,12 @@ export function computeSlots(trucks: Truck[]): SlotAnalysis[] {
   });
 }
 
-export function computeKpis(trucks: Truck[]): KpiSet {
+export function computeKpis(trucks: Truck[], window: OperationWindow = DEFAULT_OPERATION_WINDOW): KpiSet {
   const assigned = trucks.filter((truck) => truck.arrivalMinutes !== null);
   const waits = assigned
     .map((truck) => truck.temps_attente)
     .filter((wait): wait is number => wait !== null);
-  const slots = computeSlots(trucks);
+  const slots = computeSlots(trucks, window);
   const busiest = slots
     .slice()
     .sort((a, b) => b.occupancyRate - a.occupancyRate || b.arrivals - a.arrivals)[0];
@@ -351,19 +435,22 @@ export function computeKpis(trucks: Truck[]): KpiSet {
       return sum;
     }
 
-    return sum + overlapMinutes(truck.miseAQuaiMinutes, truck.finDechargementMinutes, WINDOW_START, WINDOW_END);
+    return sum + overlapMinutes(truck.miseAQuaiMinutes, truck.finDechargementMinutes, window.start, window.end);
   }, 0);
+  const windowCapacity = DOCK_COUNT * (window.end - window.start);
 
   return {
     totalTrucks: trucks.length,
-    trucksInWindow: trucks.filter((truck) => truck.arrivalBand === "main").length,
-    trucksBefore: trucks.filter((truck) => truck.arrivalBand === "before").length,
-    trucksAfter: trucks.filter((truck) => truck.arrivalBand === "after").length,
+    trucksInWindow: trucks.filter(
+      (truck) => truck.arrivalMinutes !== null && isMinuteInWindow(truck.arrivalMinutes, window)
+    ).length,
+    trucksBefore: trucks.filter((truck) => truck.arrivalMinutes !== null && truck.arrivalMinutes < window.start).length,
+    trucksAfter: trucks.filter((truck) => truck.arrivalMinutes !== null && truck.arrivalMinutes >= window.end).length,
     trucksWithoutWait: assigned.filter((truck) => (truck.temps_attente ?? 0) === 0).length,
     trucksWithWait: assigned.filter((truck) => (truck.temps_attente ?? 0) > 0).length,
     averageWait: waits.length ? waits.reduce((sum, wait) => sum + wait, 0) / waits.length : 0,
     maxWait: waits.length ? Math.max(...waits) : 0,
-    globalOccupancyRate: occupiedMinutes / DAY_CAPACITY,
+    globalOccupancyRate: windowCapacity > 0 ? occupiedMinutes / windowCapacity : 0,
     busiestSlot: busiest ? busiest.label : "-",
     incompleteData: trucks.filter((truck) => truck.dataIssues.length > 0 || truck.statut === "incomplet").length,
     estimatedDurations: trucks.filter((truck) => truck.durationEstimated).length
@@ -490,8 +577,18 @@ export function getCurrentMinuteInParis(): number {
   return hour * 60 + minute;
 }
 
-export function getOperationalMinute(selectedDate: string): number {
-  return getCurrentMinuteInParis();
+export function getOperationalMinute(
+  selectedDate: string,
+  window: OperationWindow = DEFAULT_OPERATION_WINDOW
+): number {
+  void selectedDate;
+  const currentMinute = getCurrentMinuteInParis();
+
+  if (window.id === "day") {
+    return currentMinute;
+  }
+
+  return Math.min(window.end, Math.max(window.start, currentMinute));
 }
 
 export function uniqueFlux(trucks: Truck[]): string[] {
@@ -663,11 +760,11 @@ function getArrivalBand(arrival: number | null): ArrivalBand {
     return "missing";
   }
 
-  if (arrival < WINDOW_START) {
+  if (arrival < 0) {
     return "before";
   }
 
-  if (arrival > WINDOW_END) {
+  if (arrival > 24 * 60) {
     return "after";
   }
 
