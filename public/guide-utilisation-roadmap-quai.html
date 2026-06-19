@@ -1,0 +1,933 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Guide d'utilisation - Roadmap Quai</title>
+    <style>
+      :root {
+        --ink: #172033;
+        --muted: #66728a;
+        --line: #d9e1ec;
+        --field: #f4f7fb;
+        --white: #ffffff;
+        --success: #1f9d6b;
+        --success-bg: #e8f7f0;
+        --warning: #d88522;
+        --warning-bg: #fff3df;
+        --danger: #d94848;
+        --danger-bg: #fdecec;
+        --blue: #2b6cb0;
+        --blue-bg: #eaf2ff;
+        --dark-bg: #eef1f6;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        background: var(--field);
+        color: var(--ink);
+        font-family:
+          Inter, Arial, Helvetica, sans-serif;
+        line-height: 1.5;
+      }
+
+      .page {
+        max-width: 1180px;
+        margin: 0 auto;
+        padding: 32px 20px 56px;
+      }
+
+      header {
+        border: 1px solid var(--line);
+        background: var(--ink);
+        color: var(--white);
+        padding: 34px;
+      }
+
+      header .eyebrow {
+        margin: 0 0 10px;
+        color: rgba(255, 255, 255, 0.72);
+        font-size: 13px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: 38px;
+        line-height: 1.08;
+      }
+
+      header p {
+        max-width: 780px;
+        margin: 16px 0 0;
+        color: rgba(255, 255, 255, 0.82);
+        font-size: 17px;
+      }
+
+      h2 {
+        margin: 0 0 14px;
+        font-size: 24px;
+        line-height: 1.2;
+      }
+
+      h3 {
+        margin: 0 0 8px;
+        font-size: 17px;
+      }
+
+      p {
+        margin: 0 0 12px;
+      }
+
+      strong {
+        font-weight: 800;
+      }
+
+      .meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 22px;
+      }
+
+      .pill {
+        display: inline-flex;
+        align-items: center;
+        min-height: 28px;
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        padding: 5px 10px;
+        color: rgba(255, 255, 255, 0.84);
+        font-size: 13px;
+        font-weight: 700;
+      }
+
+      section {
+        margin-top: 18px;
+        border: 1px solid var(--line);
+        background: var(--white);
+        padding: 24px;
+      }
+
+      .grid {
+        display: grid;
+        gap: 12px;
+      }
+
+      .grid-2 {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .grid-3 {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      .grid-4 {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+      }
+
+      .card {
+        border: 1px solid var(--line);
+        background: var(--field);
+        padding: 16px;
+      }
+
+      .card p {
+        color: var(--muted);
+        font-size: 14px;
+      }
+
+      .note {
+        border-left: 5px solid var(--blue);
+        background: var(--blue-bg);
+        padding: 14px 16px;
+      }
+
+      .warning {
+        border-left: 5px solid var(--warning);
+        background: var(--warning-bg);
+        padding: 14px 16px;
+      }
+
+      .danger {
+        border-left: 5px solid var(--danger);
+        background: var(--danger-bg);
+        padding: 14px 16px;
+      }
+
+      .formula {
+        border-left: 5px solid var(--ink);
+        background: var(--dark-bg);
+        padding: 14px 16px;
+      }
+
+      .success {
+        border-left: 5px solid var(--success);
+        background: var(--success-bg);
+        padding: 14px 16px;
+      }
+
+      .status {
+        border: 1px solid var(--line);
+        padding: 14px;
+      }
+
+      .status .label {
+        display: inline-block;
+        margin-bottom: 8px;
+        padding: 4px 8px;
+        color: var(--white);
+        font-size: 12px;
+        font-weight: 800;
+        text-transform: uppercase;
+      }
+
+      .green .label {
+        background: var(--success);
+      }
+
+      .orange .label {
+        background: var(--warning);
+      }
+
+      .red .label {
+        background: var(--danger);
+      }
+
+      .black .label {
+        background: var(--ink);
+      }
+
+      .grey .label {
+        background: var(--muted);
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        overflow: hidden;
+        font-size: 14px;
+      }
+
+      th,
+      td {
+        border: 1px solid var(--line);
+        padding: 10px 12px;
+        text-align: left;
+        vertical-align: top;
+      }
+
+      th {
+        background: var(--ink);
+        color: var(--white);
+        font-size: 12px;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+      }
+
+      tr:nth-child(even) td {
+        background: #fbfcfe;
+      }
+
+      .tag {
+        display: inline-block;
+        border: 1px solid var(--line);
+        background: var(--field);
+        padding: 3px 7px;
+        font-size: 12px;
+        font-weight: 800;
+        white-space: nowrap;
+      }
+
+      .tag.green {
+        border-color: #a7dfc6;
+        background: var(--success-bg);
+        color: #13774f;
+      }
+
+      .tag.orange {
+        border-color: #efd09f;
+        background: var(--warning-bg);
+        color: #995d13;
+      }
+
+      .tag.red {
+        border-color: #efb3b3;
+        background: var(--danger-bg);
+        color: #a53434;
+      }
+
+      .tag.blue {
+        border-color: #b9cef0;
+        background: var(--blue-bg);
+        color: var(--blue);
+      }
+
+      .tag.black {
+        border-color: var(--ink);
+        background: var(--ink);
+        color: var(--white);
+      }
+
+      .steps {
+        counter-reset: step;
+        display: grid;
+        gap: 10px;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+      }
+
+      .steps li {
+        position: relative;
+        min-height: 52px;
+        border: 1px solid var(--line);
+        background: var(--field);
+        padding: 12px 14px 12px 56px;
+      }
+
+      .steps li::before {
+        counter-increment: step;
+        content: counter(step);
+        position: absolute;
+        left: 14px;
+        top: 12px;
+        display: grid;
+        width: 28px;
+        height: 28px;
+        place-items: center;
+        background: var(--ink);
+        color: var(--white);
+        font-size: 13px;
+        font-weight: 800;
+      }
+
+      .checklist {
+        display: grid;
+        gap: 8px;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+      }
+
+      .checklist li {
+        border-left: 4px solid var(--success);
+        background: var(--success-bg);
+        padding: 10px 12px;
+      }
+
+      .avoid li {
+        border-left-color: var(--danger);
+        background: var(--danger-bg);
+      }
+
+      .two-col {
+        display: grid;
+        grid-template-columns: 1.05fr 0.95fr;
+        gap: 18px;
+        align-items: start;
+      }
+
+      .mini {
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .caption {
+        margin-top: 10px;
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .print-banner {
+        display: none;
+      }
+
+      @media (max-width: 860px) {
+        .grid-2,
+        .grid-3,
+        .grid-4,
+        .two-col {
+          grid-template-columns: 1fr;
+        }
+
+        header {
+          padding: 24px;
+        }
+
+        h1 {
+          font-size: 30px;
+        }
+
+        section {
+          padding: 18px;
+        }
+
+        table {
+          display: block;
+          overflow-x: auto;
+          white-space: nowrap;
+        }
+      }
+
+      @media print {
+        body {
+          background: white;
+        }
+
+        .page {
+          max-width: none;
+          padding: 0;
+        }
+
+        header,
+        section {
+          break-inside: avoid;
+          box-shadow: none;
+        }
+
+        .print-banner {
+          display: block;
+          margin-bottom: 12px;
+          color: var(--muted);
+          font-size: 12px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="page">
+      <header>
+        <p class="eyebrow">Guide opérationnel équipes quai</p>
+        <h1>Roadmap Quai</h1>
+        <p>
+          Le guide simple pour remplir correctement le Google Sheet, comprendre le tableau de pilotage,
+          anticiper les tensions quai et prendre les bonnes décisions sans multiplier les outils.
+        </p>
+        <div class="meta">
+          <span class="pill">Application : roadmap-quai.vercel.app</span>
+          <span class="pill">Mise à jour automatique : 30 secondes</span>
+          <span class="pill">Périmètre : 5 portes + porte Tampon</span>
+          <span class="pill">Version guide : 19/06/2026</span>
+        </div>
+      </header>
+
+      <section>
+        <h2>1. À quoi sert Roadmap Quai ?</h2>
+        <div class="two-col">
+          <div>
+            <p>
+              Roadmap Quai sert à donner une vision claire de la situation quai à partir d’une seule
+              source : le Google Sheet. L’objectif est que les équipes n’aient pas à recalculer,
+              comparer ou interpréter manuellement les arrivées.
+            </p>
+            <div class="success">
+              <strong>Principe clé :</strong> l’utilisateur met à jour le Google Sheet. L’application
+              récupère les données, recalcule les portes, les attentes, les saturations et les alertes.
+            </div>
+          </div>
+          <div class="grid">
+            <div class="card">
+              <h3>Pour le chef de quai</h3>
+              <p>Voir en quelques secondes les camions en cours, ceux qui arrivent et les risques immédiats.</p>
+            </div>
+            <div class="card">
+              <h3>Pour l’exploitation</h3>
+              <p>Anticiper les créneaux chargés, ajuster les priorités et fiabiliser les horaires.</p>
+            </div>
+            <div class="card">
+              <h3>Pour les équipes terrain</h3>
+              <p>Comprendre quelle porte est utilisée, quels camions attendent et où se situe la tension.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2>2. La règle d’or</h2>
+        <div class="grid grid-4">
+          <div class="status green">
+            <span class="label">1 seule saisie</span>
+            <h3>Le Google Sheet</h3>
+            <p>On ne saisit pas les camions dans l’application. Le Sheet reste la source de vérité.</p>
+          </div>
+          <div class="status orange">
+            <span class="label">Auto</span>
+            <h3>Calculs quai</h3>
+            <p>L’application recalcule automatiquement portes, temps d’attente, KPI et alertes.</p>
+          </div>
+          <div class="status red">
+            <span class="label">Attention</span>
+            <h3>Titres et formules</h3>
+            <p>Ne pas renommer les colonnes et ne pas écrire dans O/P : ces colonnes contiennent des formules.</p>
+          </div>
+          <div class="status black">
+            <span class="label">Décision</span>
+            <h3>Vue principale</h3>
+            <p>La vue “Décision quai” est celle à utiliser pour piloter l’activité en temps réel.</p>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2>3. Routine quotidienne recommandée</h2>
+        <ol class="steps">
+          <li>
+            <strong>Mettre à jour le Google Sheet.</strong><br />
+            Ajouter, modifier ou supprimer les tournées dès que l’information change.
+          </li>
+          <li>
+            <strong>Vérifier les champs essentiels.</strong><br />
+            Heure d’arrivée, nombre de palettes, flux, véhicule et présence des formules en colonnes O/P.
+          </li>
+          <li>
+            <strong>Ouvrir Roadmap Quai.</strong><br />
+            L’application se met à jour automatiquement toutes les 30 secondes.
+          </li>
+          <li>
+            <strong>Lire d’abord “Décision quai”.</strong><br />
+            Regarder “Maintenant”, “Prochaines 30 minutes” puis “Risques”.
+          </li>
+          <li>
+            <strong>Agir sur le Sheet si besoin.</strong><br />
+            Si une priorité, une porte forcée ou une correction est nécessaire, on la saisit dans le Sheet.
+          </li>
+        </ol>
+      </section>
+
+      <section>
+        <h2>4. Comment remplir le Google Sheet</h2>
+        <p>
+          Une ligne doit correspondre à une tournée / ramasse. Plus la donnée est propre, plus le pilotage
+          sera fiable. Les colonnes M et N permettent de piloter les portes et priorités. Les colonnes O et P
+          sont calculées automatiquement par formule et ne doivent pas être saisies manuellement.
+        </p>
+
+        <div class="formula" style="margin-bottom: 14px">
+          <strong>Zone à ne pas remplir :</strong> les colonnes <strong>O - T DECHAR / CAMION</strong> et
+          <strong>P - CRENAU HORAIRE</strong> contiennent des formules automatiques. Il ne faut pas écrire dedans,
+          sinon la formule peut être écrasée et les calculs de l’application peuvent devenir faux.
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Champ</th>
+              <th>À remplir</th>
+              <th>Format attendu</th>
+              <th>Impact dans l’application</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>CODE TOURNEE</strong></td>
+              <td>Code de la tournée ou du voyage.</td>
+              <td><span class="tag blue">LILZ00</span></td>
+              <td>Identifie le camion dans les listes, la timeline et les alertes.</td>
+            </tr>
+            <tr>
+              <td><strong>RAMASSES</strong></td>
+              <td>Nom ou libellé de la ramasse.</td>
+              <td>Texte clair et stable.</td>
+              <td>Permet de rechercher et comprendre le contenu de la tournée.</td>
+            </tr>
+            <tr>
+              <td><strong>HEURE D’ARRIVEE</strong></td>
+              <td>Heure prévue d’arrivée sur site.</td>
+              <td><span class="tag blue">13:05</span> ou <span class="tag blue">13h05</span></td>
+              <td>Base de tout le planning : mise à quai, attente, risques et “prochain attendu”.</td>
+            </tr>
+            <tr>
+              <td><strong>NB PALETTES MARCHANDISES</strong></td>
+              <td>Volume à traiter.</td>
+              <td>Nombre simple : <span class="tag blue">27</span></td>
+              <td>Affiché dans “Prochaines 30 minutes” pour anticiper la charge terrain.</td>
+            </tr>
+            <tr>
+              <td><strong>SEC / FRAIS / SURGELE</strong></td>
+              <td>Cocher ou marquer le flux concerné.</td>
+              <td><span class="tag blue">X</span>, <span class="tag blue">OUI</span> ou vide.</td>
+              <td>Affiche le type de flux et permet de filtrer.</td>
+            </tr>
+            <tr>
+              <td><strong>SEMI / PORTEUR</strong></td>
+              <td>Type de véhicule.</td>
+              <td><span class="tag blue">X</span>, <span class="tag blue">OUI</span> ou vide.</td>
+              <td>Donne du contexte opérationnel sur la tournée.</td>
+            </tr>
+            <tr>
+              <td><strong>Colonne M - PORTE_SOUHAITEE</strong></td>
+              <td>Optionnel : forcer une porte ou utiliser le Tampon.</td>
+              <td><span class="tag blue">1</span> à <span class="tag blue">5</span>, <span class="tag orange">TAMPON</span> ou vide.</td>
+              <td>Vide = affectation automatique. 1 à 5 = porte imposée. TAMPON = traitement exceptionnel hors capacité des 5 portes.</td>
+            </tr>
+            <tr>
+              <td><strong>Colonne N - PRIORITE_QUAI</strong></td>
+              <td>Optionnel : indiquer une priorité.</td>
+              <td><span class="tag green">OUI</span>, <span class="tag">NON</span> ou vide.</td>
+              <td>Signale une priorité quai et départage les camions arrivant au même horaire.</td>
+            </tr>
+            <tr>
+              <td><strong>Colonne O - T DECHAR / CAMION</strong></td>
+              <td><span class="tag black">Ne rien saisir</span></td>
+              <td>Formule automatique du Google Sheet.</td>
+              <td>L’application lit cette valeur calculée, puis ajoute automatiquement 10 minutes de marge.</td>
+            </tr>
+            <tr>
+              <td><strong>Colonne P - CRENAU HORAIRE</strong></td>
+              <td><span class="tag black">Ne rien saisir</span></td>
+              <td>Formule automatique du Google Sheet.</td>
+              <td>Information de contexte générée automatiquement. Le calcul principal se base surtout sur l’heure d’arrivée.</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="warning" style="margin-top: 14px">
+          <strong>Très important :</strong> ne rajoutez pas vous-même les 10 minutes de sécurité dans le Google Sheet.
+          Si la formule de la colonne O affiche 20 minutes, l’application calcule 30 minutes.
+        </div>
+      </section>
+
+      <section>
+        <h2>5. Bien utiliser “Porte souhaitée”, “Priorité quai” et “Tampon”</h2>
+        <div class="grid grid-3">
+          <div class="card">
+            <h3>PORTE_SOUHAITEE vide</h3>
+            <p>
+              Cas recommandé par défaut. L’application affecte automatiquement la première porte disponible
+              en tenant compte des camions déjà planifiés.
+            </p>
+            <span class="tag green">Recommandé</span>
+          </div>
+          <div class="card">
+            <h3>PORTE_SOUHAITEE = 1 à 5</h3>
+            <p>
+              À utiliser si une tournée doit réellement aller sur une porte précise. Si la porte est occupée,
+              l’application signale un conflit et génère de l’attente.
+            </p>
+            <span class="tag orange">À utiliser avec prudence</span>
+          </div>
+          <div class="card">
+            <h3>PORTE_SOUHAITEE = TAMPON</h3>
+            <p>
+              À réserver aux cas exceptionnels où le camion doit passer hors circuit normal. Il n’occupe pas
+              les 5 portes dans le calcul de capacité.
+            </p>
+            <span class="tag red">Exception uniquement</span>
+          </div>
+        </div>
+
+        <div class="note" style="margin-top: 14px">
+          <strong>PRIORITE_QUAI = OUI</strong> ne doit pas être utilisé pour tout. C’est un signal opérationnel.
+          Il aide à faire passer un camion prioritaire quand plusieurs arrivées se présentent au même moment.
+        </div>
+
+        <div class="danger" style="margin-top: 14px">
+          <strong>Attention au Tampon :</strong> si on l’utilise trop souvent, l’occupation réelle des 5 portes
+          peut paraître plus faible que la pression réellement vécue sur le terrain. Il doit correspondre à une
+          vraie décision d’exploitation.
+        </div>
+      </section>
+
+      <section>
+        <h2>6. Lire la vue “Décision quai”</h2>
+        <div class="grid grid-3">
+          <div class="card">
+            <h3>Maintenant</h3>
+            <p>
+              Indique l’heure de référence, les camions en cours, les portes occupées et le prochain camion attendu.
+              C’est le premier bloc à regarder.
+            </p>
+          </div>
+          <div class="card">
+            <h3>Prochaines 30 minutes</h3>
+            <p>
+              Montre les arrivées immédiates, les portes disponibles, le volume palettes et le risque d’attente.
+              C’est le bloc d’anticipation.
+            </p>
+          </div>
+          <div class="card">
+            <h3>Risques</h3>
+            <p>
+              Liste les camions en attente, créneaux critiques, conflits de porte, données à corriger et saturations.
+              C’est le bloc d’action.
+            </p>
+          </div>
+        </div>
+
+        <div class="success" style="margin-top: 14px">
+          <strong>Lecture en moins de 5 secondes :</strong> si le bandeau indique “Situation fluide”, aucune action
+          immédiate. Si le bandeau indique “Sous tension”, il faut anticiper le prochain créneau. Si le bandeau indique
+          “Action requise”, il faut traiter la file ou la saturation maintenant.
+        </div>
+      </section>
+
+      <section>
+        <h2>7. Comprendre les couleurs</h2>
+        <div class="grid grid-4">
+          <div class="status green">
+            <span class="label">Vert</span>
+            <h3>Fluide</h3>
+            <p>Le quai absorbe la charge. Aucun camion ne devrait attendre de manière significative.</p>
+          </div>
+          <div class="status orange">
+            <span class="label">Orange</span>
+            <h3>Sous tension</h3>
+            <p>Le créneau devient chargé. Il faut surveiller les prochaines arrivées et préparer les portes.</p>
+          </div>
+          <div class="status red">
+            <span class="label">Rouge</span>
+            <h3>Saturé</h3>
+            <p>La capacité est proche de la limite. Une action rapide peut être nécessaire.</p>
+          </div>
+          <div class="status black">
+            <span class="label">Noir</span>
+            <h3>Backlog</h3>
+            <p>Il y a de l’attente alors que le quai est déjà très occupé. C’est le signal le plus critique.</p>
+          </div>
+        </div>
+        <p class="caption">
+          Les badges <span class="tag black">PRIO</span> et <span class="tag orange">TAMPON</span> apparaissent
+          directement sur les camions concernés.
+        </p>
+      </section>
+
+      <section>
+        <h2>8. Comprendre “Capacité par 30 min”</h2>
+        <p>
+          Cette partie ne compte pas uniquement les camions. Elle mesure la capacité réelle du quai en minutes.
+          Avec 5 portes, chaque créneau de 30 minutes représente 150 minutes de capacité.
+        </p>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Colonne</th>
+              <th>Signification</th>
+              <th>Exemple simple</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Créneau</strong></td>
+              <td>Plage de 30 minutes analysée.</td>
+              <td>13h00 - 13h30</td>
+            </tr>
+            <tr>
+              <td><strong>Arr.</strong></td>
+              <td>Nombre de camions arrivant dans ce créneau.</td>
+              <td>5 arrivées entre 13h00 et 13h30.</td>
+            </tr>
+            <tr>
+              <td><strong>Charge arrivée</strong></td>
+              <td>Total des minutes de déchargement des camions qui arrivent dans ce créneau.</td>
+              <td>3 camions de 30 min = 90 min.</td>
+            </tr>
+            <tr>
+              <td><strong>Occupation réelle</strong></td>
+              <td>Minutes réellement occupées sur les 5 portes pendant le créneau.</td>
+              <td>5 portes occupées pendant 30 min = 150 min.</td>
+            </tr>
+            <tr>
+              <td><strong>Taux occ.</strong></td>
+              <td>Occupation réelle divisée par la capacité maximale de 150 minutes.</td>
+              <td>120 min / 150 min = 80 %.</td>
+            </tr>
+            <tr>
+              <td><strong>Attente cumulée</strong></td>
+              <td>Somme des minutes d’attente des camions sur le créneau.</td>
+              <td>2 camions attendent 15 min = 30 min.</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="note" style="margin-top: 14px">
+          <strong>Pourquoi “Charge arrivée” peut dépasser 150 min ?</strong> Parce que les camions arrivés sur
+          le même créneau peuvent continuer à décharger sur le créneau suivant. Ce n’est pas une erreur.
+        </div>
+      </section>
+
+      <section>
+        <h2>9. Ce que l’application calcule automatiquement</h2>
+        <div class="grid grid-3">
+          <div class="card">
+            <h3>Affectation des portes</h3>
+            <p>Les camions sont positionnés sur les 5 portes selon l’arrivée, la disponibilité et les contraintes saisies.</p>
+          </div>
+          <div class="card">
+            <h3>Heure de mise à quai</h3>
+            <p>Si une porte est libre, le camion passe directement. Sinon, il attend le prochain créneau disponible.</p>
+          </div>
+          <div class="card">
+            <h3>Fin de déchargement</h3>
+            <p>Calculée avec le temps de déchargement fourni automatiquement par la colonne O, plus 10 minutes de marge.</p>
+          </div>
+          <div class="card">
+            <h3>Temps d’attente</h3>
+            <p>Différence entre l’arrivée du camion et sa mise à quai réelle.</p>
+          </div>
+          <div class="card">
+            <h3>Saturation</h3>
+            <p>Détectée quand l’occupation des portes approche ou atteint la capacité maximale.</p>
+          </div>
+          <div class="card">
+            <h3>Alertes</h3>
+            <p>Générées en cas d’attente, backlog, conflit de porte forcée, données manquantes ou priorité quai.</p>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2>10. Que faire selon la situation ?</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Situation affichée</th>
+              <th>Ce que cela veut dire</th>
+              <th>Action recommandée</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="tag green">Situation fluide</span></td>
+              <td>Le quai absorbe la charge actuelle.</td>
+              <td>Continuer la surveillance normale. Garder le Sheet à jour.</td>
+            </tr>
+            <tr>
+              <td><span class="tag orange">Sous tension</span></td>
+              <td>Le prochain créneau peut devenir compliqué.</td>
+              <td>Préparer les portes, vérifier les arrivées proches et éviter de forcer inutilement une porte.</td>
+            </tr>
+            <tr>
+              <td><span class="tag red">Action requise</span></td>
+              <td>Il y a une attente ou un risque critique maintenant.</td>
+              <td>Regarder “En attente maintenant”, traiter les camions concernés et ajuster la priorité si nécessaire.</td>
+            </tr>
+            <tr>
+              <td><span class="tag black">Backlog</span></td>
+              <td>La file commence à s’accumuler alors que le quai est chargé.</td>
+              <td>Décider rapidement : ouvrir une solution terrain, utiliser Tampon si réellement justifié, ou revoir l’ordre.</td>
+            </tr>
+            <tr>
+              <td><span class="tag red">Données à corriger</span></td>
+              <td>Une ligne du Sheet est incomplète ou incohérente.</td>
+              <td>Corriger l’heure, le code tournée, la porte souhaitée ou la donnée source. Ne pas écraser les formules O/P.</td>
+            </tr>
+            <tr>
+              <td><span class="tag orange">Conflit porte forcée</span></td>
+              <td>Une porte imposée n’est pas disponible à l’arrivée du camion.</td>
+              <td>Laisser la porte vide pour repasser en automatique ou choisir une autre porte réellement disponible.</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section>
+        <h2>11. Cas pratiques</h2>
+        <div class="grid grid-2">
+          <div class="card">
+            <h3>Ajouter une tournée</h3>
+            <p>Ajouter une nouvelle ligne dans le bon onglet du Google Sheet. L’application l’affiche après la prochaine mise à jour automatique.</p>
+          </div>
+          <div class="card">
+            <h3>Modifier une tournée</h3>
+            <p>Modifier directement la ligne : heure, palettes, flux, véhicule, porte souhaitée ou priorité. Pour la durée/créneau, corriger la donnée source qui alimente les formules O/P.</p>
+          </div>
+          <div class="card">
+            <h3>Supprimer une tournée</h3>
+            <p>Supprimer la ligne du Sheet si le camion ne vient plus. Il disparaîtra de l’application après synchronisation.</p>
+          </div>
+          <div class="card">
+            <h3>Plusieurs camions au même horaire</h3>
+            <p>L’application répartit les camions sur les portes disponibles. Si plus de 5 camions doivent passer en même temps, l’attente apparaît.</p>
+          </div>
+          <div class="card">
+            <h3>Camion prioritaire</h3>
+            <p>Mettre <strong>OUI</strong> en colonne N. Si besoin absolu hors circuit normal, utiliser <strong>TAMPON</strong> en colonne M.</p>
+          </div>
+          <div class="card">
+            <h3>Journée très chargée</h3>
+            <p>Se concentrer sur “Prochaines 30 minutes”, “Risques” et “Capacité par 30 min” pour agir avant la saturation.</p>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2>12. Checklist qualité du Sheet</h2>
+        <div class="grid grid-2">
+          <div>
+            <h3>À faire</h3>
+            <ul class="checklist">
+              <li>Une ligne par tournée / ramasse.</li>
+              <li>Heures au format clair : 13:05 ou 13h05.</li>
+              <li>Colonnes O et P laissées intactes : elles sont alimentées par formule.</li>
+              <li>Colonnes M et N utilisées uniquement si nécessaire.</li>
+              <li>Suppression des lignes annulées pour éviter les faux camions.</li>
+              <li>Vérifier “Données à corriger” après chaque grosse mise à jour.</li>
+            </ul>
+          </div>
+          <div>
+            <h3>À éviter</h3>
+            <ul class="checklist avoid">
+              <li>Renommer les titres de colonnes.</li>
+              <li>Créer des colonnes doublons pour PORTE_SOUHAITEE ou PRIORITE_QUAI.</li>
+              <li>Saisir directement en colonnes O ou P et écraser les formules.</li>
+              <li>Forcer toutes les portes manuellement.</li>
+              <li>Utiliser TAMPON comme une sixième porte normale.</li>
+              <li>Saisir des heures ambiguës ou incomplètes.</li>
+              <li>Laisser une ligne incomplète en pensant qu’elle sera ignorée.</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2>13. Questions fréquentes</h2>
+        <div class="grid">
+          <div class="card">
+            <h3>Pourquoi le site ne demande pas de cliquer sur “actualiser” ?</h3>
+            <p>L’application relance automatiquement la récupération des données toutes les 30 secondes. Le bouton “Actualiser” sert surtout à forcer une vérification immédiate.</p>
+          </div>
+          <div class="card">
+            <h3>Pourquoi “Charge arrivée” et “Occupation réelle” sont différentes ?</h3>
+            <p>La charge arrivée regarde les camions qui arrivent dans le créneau. L’occupation réelle regarde les minutes réellement consommées sur les portes pendant ce même créneau.</p>
+          </div>
+          <div class="card">
+            <h3>Pourquoi un camion peut attendre alors qu’il reste une porte ailleurs ?</h3>
+            <p>Si une porte est forcée en colonne M, l’application respecte cette contrainte. Si cette porte n’est pas libre, un conflit et de l’attente peuvent apparaître.</p>
+          </div>
+          <div class="card">
+            <h3>Que faire si les chiffres semblent incohérents ?</h3>
+            <p>Vérifier d’abord le Sheet : heure d’arrivée, portes souhaitées, priorités, données manquantes et formules O/P intactes. Ensuite cliquer sur “Actualiser”.</p>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2>14. Résumé à afficher près du quai</h2>
+        <div class="grid grid-3">
+          <div class="success">
+            <h3>1. Je remplis le Sheet</h3>
+            <p>Le Sheet est la seule action de saisie à faire.</p>
+          </div>
+          <div class="warning">
+            <h3>2. Je lis Décision quai</h3>
+            <p>Maintenant, prochaines 30 minutes, risques.</p>
+          </div>
+          <div class="danger">
+            <h3>3. J’agis si rouge/noir</h3>
+            <p>Attente, saturation, backlog ou conflit de porte.</p>
+          </div>
+        </div>
+        <p class="caption">
+          En cas de doute, ne pas corriger dans l’application : corriger le Google Sheet, puis attendre la synchronisation.
+        </p>
+      </section>
+    </main>
+  </body>
+</html>
