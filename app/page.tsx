@@ -84,8 +84,9 @@ export default function Page() {
   const [viewMode, setViewMode] = useState<ViewMode>("decision");
   const [loadState, setLoadState] = useState<LoadState>("idle");
   const [error, setError] = useState<string>("");
-  const [clockTick, setClockTick] = useState(0);
+  const [nowMinute, setNowMinute] = useState(WINDOW_START);
   const hasLoadedDataRef = useRef(false);
+  const selectedDate = filters.date || data?.dates[0] || "";
 
   const loadData = useCallback(async () => {
     setLoadState("loading");
@@ -127,12 +128,14 @@ export default function Page() {
   }, [loadData]);
 
   useEffect(() => {
-    const timer = window.setInterval(() => setClockTick((current) => current + 1), REFRESH_MS);
+    const refreshClock = () => setNowMinute(getOperationalMinute(selectedDate));
+
+    refreshClock();
+    const timer = window.setInterval(refreshClock, REFRESH_MS);
 
     return () => window.clearInterval(timer);
-  }, []);
+  }, [selectedDate]);
 
-  const selectedDate = filters.date || data?.dates[0] || "";
   const scopedFilters = { ...filters, date: selectedDate };
   const visibleTrucks = useMemo(
     () => applyFilters(data?.trucks ?? [], scopedFilters),
@@ -147,7 +150,6 @@ export default function Page() {
   const alerts = useMemo(() => computeAlerts(visibleTrucks, slots), [visibleTrucks, slots]);
   const fluxOptions = useMemo(() => uniqueFlux(dateTrucks), [dateTrucks]);
   const weekSummary = useMemo(() => buildWeekSummary(data?.trucks ?? []), [data?.trucks]);
-  const nowMinute = useMemo(() => getOperationalMinute(selectedDate), [clockTick, selectedDate]);
   const alertGroups = useMemo(
     () => splitOperationAlerts(alerts, nowMinute, visibleTrucks),
     [alerts, nowMinute, visibleTrucks]
