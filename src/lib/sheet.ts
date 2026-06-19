@@ -4,11 +4,14 @@ import type { RoadmapResponse } from "@/types";
 
 const DEFAULT_SHEET_ID = "1kxVKlwjMyM619Rg1WdqzvxwQ0pT-b-FIv651C_oWwkg";
 const DEFAULT_WEEK_GIDS = ["0", "1518551151", "140536758", "1451860817", "1580103380"];
-const DEFAULT_TARGET_START_DATE = "2026-04-20";
-const DEFAULT_TARGET_END_DATE = "2026-04-24";
 
 type GoogleValuesResponse = {
   values?: string[][];
+};
+
+type PublicSheetInfo = {
+  gid: string;
+  title: string;
 };
 
 type GoogleBatchValuesResponse = {
@@ -82,9 +85,8 @@ async function fetchFromGoogleSheetsApi(sheetId: string): Promise<Record<string,
 async function fetchFromPublicCsv(
   sheetId: string
 ): Promise<{ errors: string[]; rows: Record<string, string>[] }> {
-  const gids = getPublicGids();
+  const { errors, gids } = await getPublicGids(sheetId);
   const results = await Promise.allSettled(gids.map((gid) => fetchPublicCsvByGid(sheetId, gid)));
-  const errors: string[] = [];
   const rows: Record<string, string>[] = [];
 
   results.forEach((result, index) => {
@@ -170,15 +172,86 @@ function buildDates(trucks: { date: string }[]): string[] {
   return Array.from(new Set(trucks.map((truck) => truck.date))).sort();
 }
 
-function getPublicGids(): string[] {
+async function getPublicGids(sheetId: string): Promise<{ errors: string[]; gids: string[] }> {
   const configured = process.env.GOOGLE_SHEET_GIDS?.split(",")
     .map((gid) => gid.trim())
     .filter(Boolean);
 
-  return configured?.length ? configured : DEFAULT_WEEK_GIDS;
+  if (configured?.length) {
+    return { errors: [], gids: configured };
+  }
+
+  try {
+    const discovered = await fetchPublicSheetInfos(sheetId);
+    const operationalGids = discovered
+      .filter((sheet) => isOperationalSheetTitle(sheet.title))
+      .map((sheet) => sheet.gid);
+
+    if (operationalGids.length) {
+      return { errors: [], gids: operationalGids };
+    }
+
+    return {
+      errors: ["Aucun onglet operationnel detecte automatiquement, lecture limitee aux onglets par defaut."],
+      gids: DEFAULT_WEEK_GIDS
+    };
+  } catch (error) {
+    return {
+      errors: [
+        error instanceof Error
+          ? `Detection automatique des onglets impossible: ${error.message}`
+          : "Detection automatique des onglets impossible."
+      ],
+      gids: DEFAULT_WEEK_GIDS
+    };
+  }
 }
 
-function getTargetDateSet(): Set<string> {
+async function fetchPublicSheetInfos(sheetId: string): Promise<PublicSheetInfo[]> {
+  const response = await fetch(`https://docs.google.com/spreadsheets/d/${sheetId}/edit?usp=sharing`, {
+    cache: "no-store"
+  });
+
+  if (!response.ok) {
+    throw new Error(`${response.status} ${response.statusText}`);
+  }
+
+  return parsePublicSheetInfos(await response.text());
+}
+
+function parsePublicSheetInfos(html: string): PublicSheetInfo[] {
+  const matches = html.matchAll(/\[\d+,0,\\"(\d+)\\",\[\{\\"1\\":\[\[0,0,\\"([^\\"]+)\\"/g);
+  const seen = new Set<string>();
+
+  return Array.from(matches).reduce<PublicSheetInfo[]>((sheets, match) => {
+    const [, gid, title] = match;
+
+    if (!gid || !title || seen.has(gid)) {
+      return sheets;
+    }
+
+    seen.add(gid);
+    sheets.push({ gid, title });
+    return sheets;
+  }, []);
+}
+
+function isOperationalSheetTitle(title: string): boolean {
+  const normalized = title
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .toLowerCase();
+
+  if (/^(data|synthese|depart|param|config|modele|template)\b/.test(normalized)) {
+    return false;
+  }
+
+  return /\b(lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche)\b/.test(normalized)
+    || /\b(planning|roadmap|quai|ramasse|ramasses)\b/.test(normalized);
+}
+
+function getTargetDateSet(): Set<string> | null {
   const configuredDates = process.env.ROADMAP_TARGET_DATES?.split(",")
     .map((date) => date.trim())
     .filter(Boolean);
@@ -187,13 +260,21 @@ function getTargetDateSet(): Set<string> {
     return new Set(configuredDates);
   }
 
-  const startDate = process.env.ROADMAP_START_DATE || DEFAULT_TARGET_START_DATE;
-  const endDate = process.env.ROADMAP_END_DATE || DEFAULT_TARGET_END_DATE;
+  const startDate = process.env.ROADMAP_START_DATE;
+  const endDate = process.env.ROADMAP_END_DATE;
+
+  if (!startDate || !endDate) {
+    return null;
+  }
 
   return new Set(buildDateRange(startDate, endDate));
 }
 
-function filterTargetDates<T extends { date: string }>(rows: T[], targetDates: Set<string>): T[] {
+function filterTargetDates<T extends { date: string }>(rows: T[], targetDates: Set<string> | null): T[] {
+  if (!targetDates) {
+    return rows;
+  }
+
   return rows.filter((row) => targetDates.has(row.date));
 }
 
