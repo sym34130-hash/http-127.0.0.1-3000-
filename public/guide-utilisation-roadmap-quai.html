@@ -4,6 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Guide d'utilisation - Roadmap Quai</title>
+    <link rel="icon" href="/icon.svg" type="image/svg+xml" />
     <style>
       :root {
         --ink: #172033;
@@ -78,6 +79,35 @@
         font-size: 20px;
         font-weight: 900;
         letter-spacing: 0.04em;
+      }
+
+      .app-mark {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        min-height: 42px;
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        background: rgba(255, 255, 255, 0.08);
+        padding: 7px 12px 7px 7px;
+      }
+
+      .app-icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 30px;
+        height: 30px;
+        background: #0056a8;
+        color: var(--white);
+        font-size: 13px;
+        font-weight: 900;
+        letter-spacing: 0.02em;
+      }
+
+      .app-label {
+        color: var(--white);
+        font-size: 14px;
+        font-weight: 900;
       }
 
       .brand-context {
@@ -467,6 +497,10 @@
       <header>
         <div class="brand-line" aria-label="Identité">
           <div class="stef-mark">STEF</div>
+          <div class="app-mark" aria-label="Logo Roadmap Quai">
+            <span class="app-icon">RQ</span>
+            <span class="app-label">Roadmap Quai</span>
+          </div>
           <div class="brand-context">Pilotage exploitation quai</div>
         </div>
         <p class="eyebrow">Guide opérationnel équipes quai</p>
