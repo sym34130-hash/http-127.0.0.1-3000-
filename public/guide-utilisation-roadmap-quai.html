@@ -513,6 +513,7 @@
           <span class="pill">Application : roadmap-quai.vercel.app</span>
           <span class="pill">Mise à jour automatique : 30 secondes</span>
           <span class="pill">Périmètre : 5 portes + porte Tampon</span>
+          <span class="pill">Vues horaires : Matin / Après-midi / Journée</span>
           <span class="pill">Version guide : 19/06/2026</span>
         </div>
         <div class="quick-actions" aria-label="Accès rapides">
@@ -580,7 +581,7 @@
           <div class="status black">
             <span class="label">Décision</span>
             <h3>Vue principale</h3>
-            <p>La vue “Décision quai” est celle à utiliser pour piloter l’activité en temps réel.</p>
+            <p>La vue “Décision quai” est celle à utiliser pour piloter l’activité en temps réel, avec la bonne plage horaire.</p>
           </div>
         </div>
       </section>
@@ -599,6 +600,11 @@
           <li>
             <strong>Ouvrir Roadmap Quai.</strong><br />
             L’application se met à jour automatiquement toutes les 30 secondes.
+          </li>
+          <li>
+            <strong>Choisir la bonne plage horaire.</strong><br />
+            Utiliser <strong>Matin</strong> pour 06h00 - 13h00, <strong>Après-midi</strong> pour 13h00 - 19h00,
+            ou <strong>Journée</strong> pour piloter l’ensemble de l’activité sur 24h.
           </li>
           <li>
             <strong>Lire d’abord “Décision quai”.</strong><br />
@@ -905,14 +911,20 @@
           immédiate. Si le bandeau indique “Sous tension”, il faut anticiper le prochain créneau. Si le bandeau indique
           “Action requise”, il faut traiter la file ou la saturation maintenant.
         </div>
+
+        <div class="note" style="margin-top: 14px">
+          <strong>Choix de plage :</strong> la vue <strong>Matin</strong> sert à piloter l’activité avant 13h00,
+          la vue <strong>Après-midi</strong> reprend le pilotage quai historique 13h00 - 19h00, et la vue
+          <strong>Journée</strong> permet de contrôler toute l’activité sur 24h.
+        </div>
       </section>
 
       <section>
         <h2>8. Comprendre la MAP QUAI</h2>
         <p>
-          La MAP QUAI est la représentation visuelle du quai entre 13h00 et 19h00. Elle permet de voir
-          immédiatement quelle porte est occupée, quel camion arrive, où se crée l’attente et si une priorité
-          ou un passage Tampon a été décidé.
+          La MAP QUAI est la représentation visuelle du quai sur la plage sélectionnée : Matin, Après-midi ou
+          Journée. Elle permet de voir immédiatement quelle porte est occupée, quel camion arrive, où se crée
+          l’attente et si une priorité ou un passage Tampon a été décidé.
         </p>
 
         <div class="grid grid-3">
@@ -922,7 +934,7 @@
           </div>
           <div class="card">
             <h3>Axe horaire</h3>
-            <p>La lecture se fait de gauche à droite, de 13h00 à 19h00. Sur le jour en cours, un trait vertical indique l’heure réelle.</p>
+            <p>La lecture se fait de gauche à droite sur la plage choisie. Sur le jour en cours, un trait vertical indique l’heure réelle.</p>
           </div>
           <div class="card">
             <h3>Bloc camion</h3>
@@ -1018,7 +1030,8 @@
         <h2>10. Comprendre “Capacité par 30 min”</h2>
         <p>
           Cette partie ne compte pas uniquement les camions. Elle mesure la capacité réelle du quai en minutes.
-          Avec 5 portes, chaque créneau de 30 minutes représente 150 minutes de capacité.
+          Avec 5 portes, chaque créneau de 30 minutes représente 150 minutes de capacité. Le tableau s’adapte
+          automatiquement à la plage choisie : Matin, Après-midi ou Journée.
         </p>
 
         <table>
@@ -1033,12 +1046,12 @@
             <tr>
               <td><strong>Créneau</strong></td>
               <td>Plage de 30 minutes analysée.</td>
-              <td>13h00 - 13h30</td>
+              <td>08h00 - 08h30 ou 13h00 - 13h30 selon la plage.</td>
             </tr>
             <tr>
               <td><strong>Arr.</strong></td>
               <td>Nombre de camions arrivant dans ce créneau.</td>
-              <td>5 arrivées entre 13h00 et 13h30.</td>
+              <td>5 arrivées entre 08h00 et 08h30, ou entre 13h00 et 13h30.</td>
             </tr>
             <tr>
               <td><strong>Charge arrivée</strong></td>
@@ -1177,7 +1190,7 @@
           </div>
           <div class="card">
             <h3>Journée très chargée</h3>
-            <p>Se concentrer sur “Prochaines 30 minutes”, “Risques”, la MAP QUAI et “Capacité par 30 min” pour agir avant la saturation.</p>
+            <p>Choisir la vue “Journée”, puis se concentrer sur “Prochaines 30 minutes”, “Risques”, la MAP QUAI et “Capacité par 30 min” pour agir avant la saturation.</p>
           </div>
         </div>
       </section>
@@ -1245,6 +1258,13 @@
               Vérifier que l’onglet a bien été copié depuis MODEL avec CTRL+A / CTRL+C puis collé en A1 avec CTRL+V,
               que la colonne A “Jour” contient la bonne date choisie dans le calendrier, que l’onglet est renommé
               avec le nom du jour et la date, et qu’au moins une ligne est correctement remplie.
+            </p>
+          </div>
+          <div class="card">
+            <h3>Quelle plage horaire choisir ?</h3>
+            <p>
+              Utiliser “Matin” pour piloter avant 13h00, “Après-midi” pour le flux historique 13h00 - 19h00,
+              et “Journée” pour avoir une lecture complète sur 24h.
             </p>
           </div>
           <div class="card">
