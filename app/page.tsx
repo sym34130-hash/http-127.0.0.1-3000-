@@ -261,12 +261,15 @@ function TopBar({
     <header className="border-b border-line bg-ink text-white">
       <div className="mx-auto flex max-w-[1600px] flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between lg:px-6">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center bg-white/10">
-            <TruckIcon className="h-5 w-5" />
+          <div className="flex h-10 w-[82px] items-center justify-center border border-white/15 bg-[#0056a8] px-3 text-lg font-black tracking-wide text-white">
+            STEF
           </div>
           <div>
             <h1 className="text-xl font-semibold leading-tight">Roadmap Quai</h1>
-            <p className="text-sm text-white/70">Pilotage 5 portes | 13h00 - 19h00</p>
+            <p className="flex items-center gap-1.5 text-sm text-white/70">
+              <TruckIcon className="h-3.5 w-3.5" />
+              <span>Pilotage 5 portes | 13h00 - 19h00</span>
+            </p>
           </div>
         </div>
 
@@ -1238,6 +1241,7 @@ function MiniTruckList({
 }
 
 function SlotChart({ slots }: { slots: SlotAnalysis[] }) {
+  const [isChartReady, setIsChartReady] = useState(false);
   const data = slots.map((slot) => ({
     label: slot.label.replace(" - ", "\n"),
     arrivals: slot.arrivals,
@@ -1246,6 +1250,10 @@ function SlotChart({ slots }: { slots: SlotAnalysis[] }) {
     status: slot.status
   }));
 
+  useEffect(() => {
+    setIsChartReady(true);
+  }, []);
+
   return (
     <section className="border border-line bg-white">
       <div className="flex items-center gap-2 border-b border-line px-4 py-3">
@@ -1253,21 +1261,27 @@ function SlotChart({ slots }: { slots: SlotAnalysis[] }) {
         <h2 className="text-base font-semibold">Analyse par creneau</h2>
       </div>
       <div className="h-80 p-4">
-        <ResponsiveContainer height="100%" width="100%">
-          <ComposedChart data={data} margin={{ left: -20, right: 8, top: 8, bottom: 8 }}>
-            <CartesianGrid stroke="#d9e1ec" strokeDasharray="3 3" />
-            <XAxis dataKey="label" fontSize={11} interval={0} tickLine={false} />
-            <YAxis yAxisId="left" fontSize={11} tickLine={false} />
-            <YAxis yAxisId="right" orientation="right" fontSize={11} tickLine={false} />
-            <Tooltip />
-            <Bar dataKey="occupation" name="Occupation reelle %" yAxisId="left">
-              {data.map((entry) => (
-                <Cell fill={slotHex(entry.status)} key={entry.label} />
-              ))}
-            </Bar>
-            <Line dataKey="arrivals" name="Arrivees" stroke="#172033" strokeWidth={2} yAxisId="right" />
-          </ComposedChart>
-        </ResponsiveContainer>
+        {isChartReady ? (
+          <ResponsiveContainer height="100%" width="100%">
+            <ComposedChart data={data} margin={{ left: -20, right: 8, top: 8, bottom: 8 }}>
+              <CartesianGrid stroke="#d9e1ec" strokeDasharray="3 3" />
+              <XAxis dataKey="label" fontSize={11} interval={0} tickLine={false} />
+              <YAxis yAxisId="left" fontSize={11} tickLine={false} />
+              <YAxis yAxisId="right" orientation="right" fontSize={11} tickLine={false} />
+              <Tooltip />
+              <Bar dataKey="occupation" name="Occupation reelle %" yAxisId="left">
+                {data.map((entry) => (
+                  <Cell fill={slotHex(entry.status)} key={entry.label} />
+                ))}
+              </Bar>
+              <Line dataKey="arrivals" name="Arrivees" stroke="#172033" strokeWidth={2} yAxisId="right" />
+            </ComposedChart>
+          </ResponsiveContainer>
+        ) : (
+          <div className="flex h-full items-center justify-center border border-line bg-field text-sm text-muted">
+            Chargement du graphique...
+          </div>
+        )}
       </div>
     </section>
   );
