@@ -1350,7 +1350,8 @@ function MiniTruckList({
 }
 
 function SlotChart({ slots }: { slots: SlotAnalysis[] }) {
-  const [isChartReady, setIsChartReady] = useState(false);
+  const chartFrameRef = useRef<HTMLDivElement | null>(null);
+  const [chartSize, setChartSize] = useState({ height: 0, width: 0 });
   const data = slots.map((slot) => ({
     label: slot.label.replace(" - ", "\n"),
     arrivals: slot.arrivals,
@@ -1360,8 +1361,27 @@ function SlotChart({ slots }: { slots: SlotAnalysis[] }) {
   }));
 
   useEffect(() => {
-    setIsChartReady(true);
+    const frame = chartFrameRef.current;
+
+    if (!frame) {
+      return;
+    }
+
+    const refreshSize = () => {
+      setChartSize({
+        height: frame.clientHeight,
+        width: frame.clientWidth
+      });
+    };
+
+    refreshSize();
+    const observer = new ResizeObserver(refreshSize);
+    observer.observe(frame);
+
+    return () => observer.disconnect();
   }, []);
+
+  const isChartReady = chartSize.width > 0 && chartSize.height > 0;
 
   return (
     <section className="border border-line bg-white">
@@ -1369,7 +1389,7 @@ function SlotChart({ slots }: { slots: SlotAnalysis[] }) {
         <ChartColumnBig className="h-5 w-5 text-muted" />
         <h2 className="text-base font-semibold">Analyse par creneau</h2>
       </div>
-      <div className="h-80 p-4">
+      <div className="h-80 p-4" ref={chartFrameRef}>
         {isChartReady ? (
           <ResponsiveContainer height="100%" width="100%">
             <ComposedChart data={data} margin={{ left: -20, right: 8, top: 8, bottom: 8 }}>
