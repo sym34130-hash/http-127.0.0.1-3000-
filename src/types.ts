@@ -25,6 +25,10 @@ export type Truck = {
   temps_dechargement_minutes: number;
   durationEstimated: boolean;
   creneau_horaire: string;
+  porte_souhaitee: string;
+  porteForcee: number | null;
+  porteTampon: boolean;
+  prioriteQuai: boolean;
   porte_affectee: string | null;
   dockIndex: number | null;
   heure_mise_a_quai: string | null;
