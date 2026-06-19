@@ -107,6 +107,38 @@
         font-weight: 700;
       }
 
+      .quick-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 18px;
+      }
+
+      .action-link {
+        display: inline-flex;
+        align-items: center;
+        min-height: 38px;
+        border: 1px solid rgba(255, 255, 255, 0.28);
+        padding: 8px 12px;
+        color: var(--white);
+        font-size: 14px;
+        font-weight: 800;
+        text-decoration: none;
+      }
+
+      .action-link.primary {
+        background: rgba(255, 255, 255, 0.12);
+      }
+
+      .action-link.sheet {
+        border-color: #55c993;
+        background: var(--success);
+      }
+
+      .action-link:hover {
+        filter: brightness(1.08);
+      }
+
       section {
         margin-top: 18px;
         border: 1px solid var(--line);
@@ -414,6 +446,17 @@
           <span class="pill">Mise à jour automatique : 30 secondes</span>
           <span class="pill">Périmètre : 5 portes + porte Tampon</span>
           <span class="pill">Version guide : 19/06/2026</span>
+        </div>
+        <div class="quick-actions" aria-label="Accès rapides">
+          <a class="action-link primary" href="https://roadmap-quai.vercel.app/">Retour à l'application</a>
+          <a
+            class="action-link sheet"
+            href="https://docs.google.com/spreadsheets/d/1kxVKlwjMyM619Rg1WdqzvxwQ0pT-b-FIv651C_oWwkg/edit?usp=sharing"
+            rel="noopener noreferrer"
+            target="_blank"
+          >
+            Ouvrir le Google Sheet
+          </a>
         </div>
       </header>
 
