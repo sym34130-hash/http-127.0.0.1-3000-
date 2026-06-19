@@ -35,23 +35,27 @@ import {
 import clsx from "clsx";
 import {
   DOCK_COUNT,
+  DEFAULT_OPERATION_WINDOW,
+  OPERATION_WINDOWS,
   SLOT_CAPACITY,
   SLOT_MINUTES,
-  WINDOW_END,
-  WINDOW_START,
   applyFilters,
   computeAlerts,
   computeKpis,
   computeSlots,
+  filterTrucksByOperationWindow,
   formatDateFr,
   formatDuration,
   formatMinutes,
+  formatOperationWindow,
   getOperationalMinute,
+  getOperationWindow,
   getTodayInParis,
   slotStatusLabel,
   statusLabel,
   uniqueFlux
 } from "@/lib/planning";
+import type { OperationWindow, OperationWindowId } from "@/lib/planning";
 import type { Filters, KpiSet, OperationAlert, RoadmapResponse, SlotAnalysis, Truck } from "@/types";
 
 type ViewMode = "simple" | "decision";
@@ -74,6 +78,7 @@ type DateGroup = {
 };
 
 const TIMELINE_WIDTH = 1080;
+const HOUR_PIXEL_WIDTH = 120;
 const BLOCK_HEIGHT = 64;
 const LANE_GAP = 8;
 const LEFT_LABEL_WIDTH = 132;
@@ -93,12 +98,14 @@ const DEFAULT_FILTERS: Filters = {
 export default function Page() {
   const [data, setData] = useState<RoadmapResponse | null>(null);
   const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS);
+  const [operationWindowId, setOperationWindowId] = useState<OperationWindowId>(DEFAULT_OPERATION_WINDOW.id);
   const [viewMode, setViewMode] = useState<ViewMode>("decision");
   const [loadState, setLoadState] = useState<LoadState>("idle");
   const [error, setError] = useState<string>("");
-  const [nowMinute, setNowMinute] = useState(WINDOW_START);
+  const [nowMinute, setNowMinute] = useState(DEFAULT_OPERATION_WINDOW.start);
   const hasLoadedDataRef = useRef(false);
   const selectedDate = filters.date || data?.dates[0] || "";
+  const operationWindow = useMemo(() => getOperationWindow(operationWindowId), [operationWindowId]);
 
   const loadData = useCallback(async () => {
     setLoadState("loading");
@@ -143,16 +150,16 @@ export default function Page() {
   }, [loadData]);
 
   useEffect(() => {
-    const refreshClock = () => setNowMinute(getOperationalMinute(selectedDate));
+    const refreshClock = () => setNowMinute(getOperationalMinute(selectedDate, operationWindow));
 
     refreshClock();
     const timer = window.setInterval(refreshClock, REFRESH_MS);
 
     return () => window.clearInterval(timer);
-  }, [selectedDate]);
+  }, [operationWindow, selectedDate]);
 
   const scopedFilters = { ...filters, date: selectedDate };
-  const visibleTrucks = useMemo(
+  const filteredDateTrucks = useMemo(
     () => applyFilters(data?.trucks ?? [], scopedFilters),
     [data?.trucks, scopedFilters]
   );
@@ -160,10 +167,19 @@ export default function Page() {
     () => (data?.trucks ?? []).filter((truck) => truck.date === selectedDate),
     [data?.trucks, selectedDate]
   );
-  const slots = useMemo(() => computeSlots(visibleTrucks), [visibleTrucks]);
-  const kpis = useMemo(() => computeKpis(visibleTrucks), [visibleTrucks]);
+  const visibleTrucks = useMemo(
+    () => filterTrucksByOperationWindow(filteredDateTrucks, operationWindow),
+    [filteredDateTrucks, operationWindow]
+  );
+  const periodDateTrucks = useMemo(
+    () => filterTrucksByOperationWindow(dateTrucks, operationWindow),
+    [dateTrucks, operationWindow]
+  );
+  const outsidePeriodCount = Math.max(0, filteredDateTrucks.length - visibleTrucks.length);
+  const slots = useMemo(() => computeSlots(visibleTrucks, operationWindow), [operationWindow, visibleTrucks]);
+  const kpis = useMemo(() => computeKpis(visibleTrucks, operationWindow), [operationWindow, visibleTrucks]);
   const alerts = useMemo(() => computeAlerts(visibleTrucks, slots), [visibleTrucks, slots]);
-  const fluxOptions = useMemo(() => uniqueFlux(dateTrucks), [dateTrucks]);
+  const fluxOptions = useMemo(() => uniqueFlux(periodDateTrucks), [periodDateTrucks]);
   const weekSummary = useMemo(
     () => buildWeekSummary(data?.trucks ?? [], selectedDate),
     [data?.trucks, selectedDate]
@@ -199,9 +215,14 @@ export default function Page() {
               <span className="text-line">|</span>
               <Clock className="h-4 w-4" />
               <span>Reference {formatMinutes(nowMinute)}</span>
+              <span className="text-line">|</span>
+              <span>{operationWindow.label} {formatOperationWindow(operationWindow)}</span>
             </div>
 
-            <ViewToggle value={viewMode} onChange={setViewMode} />
+            <div className="flex flex-wrap items-center gap-2">
+              <OperationWindowToggle value={operationWindowId} onChange={setOperationWindowId} />
+              <ViewToggle value={viewMode} onChange={setViewMode} />
+            </div>
           </div>
         </div>
       </section>
@@ -231,13 +252,15 @@ export default function Page() {
             selectedDate={selectedDate}
           />
 
-          <KpiStrip kpis={kpis} />
+          <KpiStrip kpis={kpis} outsidePeriodCount={outsidePeriodCount} />
 
           {viewMode === "simple" ? (
             <SimpleView
               alerts={alertGroups.active}
+              allFilteredTrucks={filteredDateTrucks}
               kpis={kpis}
               nowMinute={nowMinute}
+              operationWindow={operationWindow}
               selectedDate={selectedDate}
               trucks={visibleTrucks}
             />
@@ -246,6 +269,7 @@ export default function Page() {
               activeAlerts={alertGroups.active}
               historicalAlerts={alertGroups.history}
               nowMinute={nowMinute}
+              operationWindow={operationWindow}
               selectedDate={selectedDate}
               slots={slots}
               trucks={visibleTrucks}
@@ -279,7 +303,7 @@ function TopBar({
             <h1 className="text-xl font-semibold leading-tight">Roadmap Quai</h1>
             <p className="flex items-center gap-1.5 text-sm text-white/70">
               <TruckIcon className="h-3.5 w-3.5" />
-              <span>Pilotage 5 portes | 13h00 - 19h00</span>
+              <span>Pilotage 5 portes | Matin / Apres-midi / Journee</span>
             </p>
           </div>
         </div>
@@ -433,6 +457,35 @@ function FilterBar({
   );
 }
 
+function OperationWindowToggle({
+  onChange,
+  value
+}: {
+  onChange: (windowId: OperationWindowId) => void;
+  value: OperationWindowId;
+}) {
+  return (
+    <div className="inline-flex border border-line bg-white p-1 shadow-toolbar">
+      {OPERATION_WINDOWS.map((window) => (
+        <button
+          aria-pressed={value === window.id}
+          className={clsx(
+            "inline-flex h-9 items-center gap-2 px-3 text-sm font-semibold transition",
+            value === window.id ? "bg-ink text-white" : "text-muted hover:bg-field hover:text-ink"
+          )}
+          key={window.id}
+          onClick={() => onChange(window.id)}
+          title={formatOperationWindow(window)}
+          type="button"
+        >
+          <Clock className="h-4 w-4" />
+          <span>{window.label}</span>
+        </button>
+      ))}
+    </div>
+  );
+}
+
 function ViewToggle({
   value,
   onChange
@@ -443,6 +496,7 @@ function ViewToggle({
   return (
     <div className="inline-flex border border-line bg-white p-1 shadow-toolbar">
       <button
+        aria-pressed={value === "simple"}
         className={clsx(
           "inline-flex h-9 items-center gap-2 px-3 text-sm font-semibold transition",
           value === "simple" ? "bg-ink text-white" : "text-muted hover:bg-field hover:text-ink"
@@ -454,6 +508,7 @@ function ViewToggle({
         Vue simple
       </button>
       <button
+        aria-pressed={value === "decision"}
         className={clsx(
           "inline-flex h-9 items-center gap-2 px-3 text-sm font-semibold transition",
           value === "decision" ? "bg-ink text-white" : "text-muted hover:bg-field hover:text-ink"
@@ -536,15 +591,14 @@ function WeekNavigator({
   );
 }
 
-function KpiStrip({ kpis }: { kpis: KpiSet }) {
-  const outOfRange = kpis.trucksBefore + kpis.trucksAfter;
+function KpiStrip({ kpis, outsidePeriodCount }: { kpis: KpiSet; outsidePeriodCount: number }) {
   const items = [
     { label: "Total prevus", value: kpis.totalTrucks, icon: TruckIcon },
     { label: "En attente", value: kpis.trucksWithWait, icon: TimerReset },
     { label: "Attente max", value: formatDuration(kpis.maxWait), icon: ShieldAlert },
     { label: "Occupation", value: `${Math.round(kpis.globalOccupancyRate * 100)} %`, icon: Activity },
     { label: "Creneau charge", value: kpis.busiestSlot, icon: ChartColumnBig },
-    { label: "Hors plage", value: outOfRange, icon: Clock },
+    { label: "Hors periode", value: outsidePeriodCount, icon: Clock },
     { label: "A corriger", value: kpis.incompleteData, icon: AlertTriangle }
   ];
 
@@ -569,27 +623,37 @@ function KpiStrip({ kpis }: { kpis: KpiSet }) {
 
 function SimpleView({
   alerts,
+  allFilteredTrucks,
   kpis,
   nowMinute,
+  operationWindow,
   selectedDate,
   trucks
 }: {
   alerts: OperationAlert[];
+  allFilteredTrucks: Truck[];
   kpis: KpiSet;
   nowMinute: number;
+  operationWindow: OperationWindow;
   selectedDate: string;
   trucks: Truck[];
 }) {
   return (
     <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_360px]">
       <div className="min-w-0">
-        <GanttTimeline selectedDate={selectedDate} showHeatbar={false} trucks={trucks} nowMinute={nowMinute} />
+        <GanttTimeline
+          nowMinute={nowMinute}
+          operationWindow={operationWindow}
+          selectedDate={selectedDate}
+          showHeatbar={false}
+          trucks={trucks}
+        />
       </div>
 
       <aside className="flex flex-col gap-4">
         <Legend />
         <CompactAlerts alerts={alerts} />
-        <OutOfRangeSections trucks={trucks} />
+        <OutOfRangeSections operationWindow={operationWindow} trucks={allFilteredTrucks} />
         <CorrectionsPanel trucks={trucks} estimatedCount={kpis.estimatedDurations} />
       </aside>
     </div>
@@ -600,6 +664,7 @@ function DecisionView({
   activeAlerts,
   historicalAlerts,
   nowMinute,
+  operationWindow,
   selectedDate,
   slots,
   trucks
@@ -607,6 +672,7 @@ function DecisionView({
   activeAlerts: OperationAlert[];
   historicalAlerts: OperationAlert[];
   nowMinute: number;
+  operationWindow: OperationWindow;
   selectedDate: string;
   slots: SlotAnalysis[];
   trucks: Truck[];
@@ -620,11 +686,17 @@ function DecisionView({
     <div className="flex flex-col gap-4">
       <DecisionStatusBanner status={decisionStatus} />
 
-      <FieldView alerts={activeAlerts} nowMinute={nowMinute} trucks={trucks} />
+      <FieldView alerts={activeAlerts} nowMinute={nowMinute} operationWindow={operationWindow} trucks={trucks} />
 
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_420px]">
         <div className="min-w-0">
-          <GanttTimeline selectedDate={selectedDate} showHeatbar trucks={trucks} nowMinute={nowMinute} />
+          <GanttTimeline
+            nowMinute={nowMinute}
+            operationWindow={operationWindow}
+            selectedDate={selectedDate}
+            showHeatbar
+            trucks={trucks}
+          />
         </div>
 
         <div className="flex flex-col gap-4">
@@ -644,32 +716,39 @@ function DecisionView({
 
 function GanttTimeline({
   nowMinute,
+  operationWindow,
   selectedDate,
   showHeatbar,
   trucks
 }: {
   nowMinute: number;
+  operationWindow: OperationWindow;
   selectedDate: string;
   showHeatbar: boolean;
   trucks: Truck[];
 }) {
-  const rows = useMemo(() => buildTimelineRows(trucks), [trucks]);
-  const slots = useMemo(() => computeSlots(trucks), [trucks]);
+  const timelineWidth = getTimelineWidth(operationWindow);
+  const rows = useMemo(
+    () => buildTimelineRows(trucks, operationWindow, timelineWidth),
+    [operationWindow, timelineWidth, trucks]
+  );
+  const slots = useMemo(() => computeSlots(trucks, operationWindow), [operationWindow, trucks]);
   const isToday = selectedDate === getTodayInParis();
-  const timelineMinute = Math.min(WINDOW_END, Math.max(WINDOW_START, nowMinute));
-  const nowLeft = ((timelineMinute - WINDOW_START) / (WINDOW_END - WINDOW_START)) * TIMELINE_WIDTH;
+  const timelineMinute = Math.min(operationWindow.end, Math.max(operationWindow.start, nowMinute));
+  const nowLeft =
+    ((timelineMinute - operationWindow.start) / (operationWindow.end - operationWindow.start)) * timelineWidth;
 
   return (
     <section className="quai-map-frame min-w-0 overflow-hidden border border-line bg-white">
       <div className="flex items-center justify-between gap-3 border-b border-line px-4 py-3">
         <div className="flex items-center gap-2">
           <MapIcon className="h-5 w-5 text-muted" />
-          <h2 className="text-base font-semibold">Map quai 13h00 - 19h00</h2>
+          <h2 className="text-base font-semibold">Map quai {formatOperationWindow(operationWindow)}</h2>
         </div>
         <div className="hidden items-center gap-3 text-xs text-muted md:flex">
           <span>5 portes</span>
           <span>|</span>
-          <span>FIFO sans priorite</span>
+          <span>{operationWindow.label}</span>
           <span>|</span>
           <span>Auto-refresh 30s</span>
         </div>
@@ -679,8 +758,8 @@ function GanttTimeline({
         <div className="w-max min-w-full">
           <div className="flex border-b border-line bg-field">
             <div style={{ width: LEFT_LABEL_WIDTH }} />
-            <div className="relative h-14" style={{ width: TIMELINE_WIDTH }}>
-              <TimeAxis />
+            <div className="relative h-14" style={{ width: timelineWidth }}>
+              <TimeAxis operationWindow={operationWindow} />
               {showHeatbar ? <Heatbar slots={slots} /> : null}
             </div>
           </div>
@@ -710,7 +789,7 @@ function GanttTimeline({
                 </div>
                 <div
                   className="gantt-grid relative bg-white"
-                  style={{ width: TIMELINE_WIDTH, height: row.height }}
+                  style={{ width: timelineWidth, height: row.height }}
                 >
                   {row.items.map((item) => (
                     <TruckBlock
@@ -730,14 +809,14 @@ function GanttTimeline({
   );
 }
 
-function TimeAxis() {
-  const hours = Array.from({ length: 7 }, (_, index) => WINDOW_START + index * 60);
-  const halfHours = Array.from({ length: 13 }, (_, index) => WINDOW_START + index * 30);
+function TimeAxis({ operationWindow }: { operationWindow: OperationWindow }) {
+  const hours = buildAxisMinutes(operationWindow, 60);
+  const halfHours = buildAxisMinutes(operationWindow, 30);
 
   return (
     <>
       {halfHours.map((minute) => {
-        const left = ((minute - WINDOW_START) / (WINDOW_END - WINDOW_START)) * 100;
+        const left = ((minute - operationWindow.start) / (operationWindow.end - operationWindow.start)) * 100;
         return (
           <div
             className="absolute top-8 h-3 border-l border-muted/30"
@@ -747,7 +826,7 @@ function TimeAxis() {
         );
       })}
       {hours.map((minute) => {
-        const left = ((minute - WINDOW_START) / (WINDOW_END - WINDOW_START)) * 100;
+        const left = ((minute - operationWindow.start) / (operationWindow.end - operationWindow.start)) * 100;
         return (
           <div
             className="absolute top-2 -translate-x-1/2 text-xs font-semibold text-muted"
@@ -972,16 +1051,26 @@ function HistoricalAlertPanel({ alerts }: { alerts: OperationAlert[] }) {
   );
 }
 
-function OutOfRangeSections({ trucks }: { trucks: Truck[] }) {
-  const before = trucks.filter((truck) => truck.arrivalBand === "before");
-  const after = trucks.filter((truck) => truck.arrivalBand === "after");
+function OutOfRangeSections({
+  operationWindow,
+  trucks
+}: {
+  operationWindow: OperationWindow;
+  trucks: Truck[];
+}) {
+  const before = trucks.filter(
+    (truck) => truck.arrivalMinutes !== null && truck.arrivalMinutes < operationWindow.start
+  );
+  const after = trucks.filter(
+    (truck) => truck.arrivalMinutes !== null && truck.arrivalMinutes >= operationWindow.end
+  );
 
   return (
     <section className="border border-line bg-white p-4">
-      <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted">Hors plage</h2>
-      <OutOfRangeList label="Avant 13h00" trucks={before} />
+      <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted">Hors periode</h2>
+      <OutOfRangeList label={`Avant ${formatMinutes(operationWindow.start)}`} trucks={before} />
       <div className="mt-4">
-        <OutOfRangeList label="Apres 19h00" trucks={after} />
+        <OutOfRangeList label={`Apres ${formatMinutes(operationWindow.end)}`} trucks={after} />
       </div>
     </section>
   );
@@ -1060,12 +1149,15 @@ function CorrectionsPanel({
 function FieldView({
   alerts,
   nowMinute,
+  operationWindow,
   trucks
 }: {
   alerts: OperationAlert[];
   nowMinute: number;
+  operationWindow: OperationWindow;
   trucks: Truck[];
 }) {
+  const nextWindowEnd = Math.min(nowMinute + SLOT_MINUTES, operationWindow.end);
   const current = trucks.filter(
     (truck) =>
       truck.miseAQuaiMinutes !== null &&
@@ -1077,7 +1169,7 @@ function FieldView({
     (truck) =>
       truck.arrivalMinutes !== null &&
       truck.arrivalMinutes >= nowMinute &&
-      truck.arrivalMinutes < nowMinute + SLOT_MINUTES
+      truck.arrivalMinutes < nextWindowEnd
   );
   const nextExpected = trucks
     .filter((truck) => truck.arrivalMinutes !== null && truck.arrivalMinutes >= nowMinute)
@@ -1403,7 +1495,30 @@ type TimelineRow = {
   label: string;
 };
 
-function buildTimelineRows(trucks: Truck[]): TimelineRow[] {
+function getTimelineWidth(operationWindow: OperationWindow): number {
+  const hours = (operationWindow.end - operationWindow.start) / 60;
+  return Math.max(TIMELINE_WIDTH, Math.round(hours * HOUR_PIXEL_WIDTH));
+}
+
+function buildAxisMinutes(operationWindow: OperationWindow, step: number): number[] {
+  const minutes: number[] = [];
+
+  for (let minute = operationWindow.start; minute <= operationWindow.end; minute += step) {
+    minutes.push(minute);
+  }
+
+  if (minutes[minutes.length - 1] !== operationWindow.end) {
+    minutes.push(operationWindow.end);
+  }
+
+  return minutes;
+}
+
+function buildTimelineRows(
+  trucks: Truck[],
+  operationWindow: OperationWindow,
+  timelineWidth: number
+): TimelineRow[] {
   const rowMap = new Map<string, TimelineItem[]>();
   Array.from({ length: DOCK_COUNT }, (_, index) => `dock-${index}`).forEach((key) => rowMap.set(key, []));
   rowMap.set("tampon", []);
@@ -1411,12 +1526,12 @@ function buildTimelineRows(trucks: Truck[]): TimelineRow[] {
   trucks.forEach((truck) => {
     if (truck.miseAQuaiMinutes !== null && truck.finDechargementMinutes !== null && truck.dockIndex !== null) {
       const blockStart = Math.min(truck.arrivalMinutes ?? truck.miseAQuaiMinutes, truck.miseAQuaiMinutes);
-      const start = Math.max(WINDOW_START, blockStart);
-      const end = Math.min(WINDOW_END, truck.finDechargementMinutes);
+      const start = Math.max(operationWindow.start, blockStart);
+      const end = Math.min(operationWindow.end, truck.finDechargementMinutes);
 
       if (end > start) {
         const rowKey = truck.porteTampon ? "tampon" : `dock-${truck.dockIndex}`;
-        rowMap.get(rowKey)?.push(createTimelineItem(truck, rowKey, start, end));
+        rowMap.get(rowKey)?.push(createTimelineItem(truck, rowKey, start, end, operationWindow, timelineWidth));
       }
     }
   });
@@ -1694,13 +1809,15 @@ function createTimelineItem(
   truck: Truck,
   rowKey: string,
   start: number,
-  end: number
+  end: number,
+  operationWindow: OperationWindow,
+  timelineWidth: number
 ): TimelineItem {
-  const left = ((start - WINDOW_START) / (WINDOW_END - WINDOW_START)) * TIMELINE_WIDTH;
-  const rawWidth = ((end - start) / (WINDOW_END - WINDOW_START)) * TIMELINE_WIDTH;
+  const left = ((start - operationWindow.start) / (operationWindow.end - operationWindow.start)) * timelineWidth;
+  const rawWidth = ((end - start) / (operationWindow.end - operationWindow.start)) * timelineWidth;
   const minWidth = 150;
-  const width = Math.min(TIMELINE_WIDTH, Math.max(rawWidth, minWidth));
-  const adjustedLeft = Math.min(left, TIMELINE_WIDTH - width);
+  const width = Math.min(timelineWidth, Math.max(rawWidth, minWidth));
+  const adjustedLeft = Math.min(left, timelineWidth - width);
 
   return {
     end,
