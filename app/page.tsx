@@ -32,6 +32,7 @@ import {
 import clsx from "clsx";
 import {
   DOCK_COUNT,
+  SLOT_CAPACITY,
   SLOT_MINUTES,
   WINDOW_END,
   WINDOW_START,
@@ -1250,22 +1251,40 @@ function SlotChart({ slots }: { slots: SlotAnalysis[] }) {
 }
 
 function SlotTable({ slots }: { slots: SlotAnalysis[] }) {
+  const referenceCapacity = slots[0]?.capacityMinutes ?? SLOT_CAPACITY;
+
   return (
     <section className="border border-line bg-white">
-      <div className="flex items-center gap-2 border-b border-line px-4 py-3">
-        <Rows3 className="h-5 w-5 text-muted" />
-        <h2 className="text-base font-semibold">Capacite 30 min</h2>
+      <div className="flex flex-col gap-3 border-b border-line px-4 py-3 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex items-center gap-2">
+          <Rows3 className="h-5 w-5 text-muted" />
+          <h2 className="text-base font-semibold">Capacite par 30 min</h2>
+        </div>
+        <div className="grid grid-cols-3 gap-2 text-xs">
+          <div className="border border-line bg-field px-3 py-2 text-right">
+            <div className="font-semibold text-ink">{DOCK_COUNT}</div>
+            <div className="text-muted">portes</div>
+          </div>
+          <div className="border border-line bg-field px-3 py-2 text-right">
+            <div className="font-semibold text-ink">{referenceCapacity}</div>
+            <div className="text-muted">min max</div>
+          </div>
+          <div className="border border-line bg-field px-3 py-2 text-right">
+            <div className="font-semibold text-ink">hors</div>
+            <div className="text-muted">tampon</div>
+          </div>
+        </div>
       </div>
       <div className="scrollbar-thin max-h-80 overflow-auto">
-        <table className="w-full min-w-[620px] border-collapse text-sm">
+        <table className="w-full min-w-[760px] border-collapse text-sm">
           <thead className="sticky top-0 bg-field text-xs uppercase tracking-wide text-muted">
             <tr>
               <th className="border-b border-line px-3 py-2 text-left">Creneau</th>
               <th className="border-b border-line px-3 py-2 text-right">Arr.</th>
-              <th className="border-b border-line px-3 py-2 text-right">Charge</th>
-              <th className="border-b border-line px-3 py-2 text-right">Occ. min</th>
-              <th className="border-b border-line px-3 py-2 text-right">Occ.</th>
-              <th className="border-b border-line px-3 py-2 text-right">Attente</th>
+              <th className="border-b border-line px-3 py-2 text-right">Charge arrivee</th>
+              <th className="border-b border-line px-3 py-2 text-right">Occupation reelle</th>
+              <th className="border-b border-line px-3 py-2 text-right">Taux occ.</th>
+              <th className="border-b border-line px-3 py-2 text-right">Attente cumulee</th>
               <th className="border-b border-line px-3 py-2 text-left">Etat</th>
             </tr>
           </thead>
@@ -1274,10 +1293,10 @@ function SlotTable({ slots }: { slots: SlotAnalysis[] }) {
               <tr className="border-b border-line last:border-b-0" key={slot.label}>
                 <td className="px-3 py-2 font-semibold">{slot.label}</td>
                 <td className="px-3 py-2 text-right">{slot.arrivals}</td>
-                <td className="px-3 py-2 text-right">{Math.round(slot.totalUnloadMinutes)}</td>
-                <td className="px-3 py-2 text-right">{Math.round(slot.occupiedMinutes)}</td>
+                <td className="px-3 py-2 text-right">{Math.round(slot.totalUnloadMinutes)} min</td>
+                <td className="px-3 py-2 text-right">{Math.round(slot.occupiedMinutes)} min</td>
                 <td className="px-3 py-2 text-right">{Math.round(slot.occupancyRate * 100)} %</td>
-                <td className="px-3 py-2 text-right">{Math.round(slot.backlogMinutes)}</td>
+                <td className="px-3 py-2 text-right">{Math.round(slot.backlogMinutes)} min</td>
                 <td className="px-3 py-2">
                   <span className={clsx("px-2 py-1 text-xs font-semibold", slotBadge(slot.status))}>
                     {slotStatusLabel(slot.status)}
