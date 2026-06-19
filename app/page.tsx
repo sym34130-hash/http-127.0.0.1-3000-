@@ -3,10 +3,13 @@
 import {
   Activity,
   AlertTriangle,
+  BookOpen,
   CalendarDays,
   ChartColumnBig,
   Clock,
   DoorOpen,
+  ExternalLink,
+  FileSpreadsheet,
   LayoutDashboard,
   Map as MapIcon,
   RefreshCw,
@@ -70,6 +73,9 @@ const BLOCK_HEIGHT = 64;
 const LANE_GAP = 8;
 const LEFT_LABEL_WIDTH = 132;
 const REFRESH_MS = 30_000;
+const GUIDE_URL = "/guide-utilisation-roadmap-quai.html";
+const GOOGLE_SHEET_URL =
+  "https://docs.google.com/spreadsheets/d/1kxVKlwjMyM619Rg1WdqzvxwQ0pT-b-FIv651C_oWwkg/edit?usp=sharing";
 
 const DEFAULT_FILTERS: Filters = {
   date: "",
@@ -264,7 +270,24 @@ function TopBar({
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3 text-sm text-white/75">
+        <div className="flex flex-wrap items-center gap-2 text-sm text-white/75">
+          <a
+            className="inline-flex h-9 items-center gap-2 border border-white/20 px-3 font-semibold text-white transition hover:bg-white/10"
+            href={GUIDE_URL}
+          >
+            <BookOpen className="h-4 w-4" />
+            <span>Guide d'utilisation</span>
+          </a>
+          <a
+            className="inline-flex h-9 items-center gap-2 border border-success/60 bg-success px-3 font-semibold text-white transition hover:bg-success/90"
+            href={GOOGLE_SHEET_URL}
+            rel="noreferrer"
+            target="_blank"
+          >
+            <FileSpreadsheet className="h-4 w-4" />
+            <span>Google Sheet</span>
+            <ExternalLink className="h-3.5 w-3.5" />
+          </a>
           <span className="inline-flex items-center gap-2">
             <Activity className="h-4 w-4" />
             {sourceMode === "google-sheets-api" ? "Google Sheets API" : "CSV public Google Sheet"}
