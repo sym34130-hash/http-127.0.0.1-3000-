@@ -733,9 +733,9 @@ function GanttTimeline({
   );
   const slots = useMemo(() => computeSlots(trucks, operationWindow), [operationWindow, trucks]);
   const isToday = selectedDate === getTodayInParis();
-  const timelineMinute = Math.min(operationWindow.end, Math.max(operationWindow.start, nowMinute));
+  const isNowInWindow = nowMinute >= operationWindow.start && nowMinute < operationWindow.end;
   const nowLeft =
-    ((timelineMinute - operationWindow.start) / (operationWindow.end - operationWindow.start)) * timelineWidth;
+    ((nowMinute - operationWindow.start) / (operationWindow.end - operationWindow.start)) * timelineWidth;
 
   return (
     <section className="quai-map-frame min-w-0 overflow-hidden border border-line bg-white">
@@ -764,7 +764,7 @@ function GanttTimeline({
           </div>
 
           <div className="relative">
-            {isToday ? (
+            {isToday && isNowInWindow ? (
               <div
                 className="pointer-events-none absolute bottom-0 top-0 z-20 w-px bg-ink"
                 style={{ left: LEFT_LABEL_WIDTH + nowLeft }}
