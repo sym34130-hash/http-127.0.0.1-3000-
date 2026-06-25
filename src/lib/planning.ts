@@ -11,7 +11,8 @@ import type {
 
 export const WINDOW_START = 13 * 60;
 export const WINDOW_END = 19 * 60;
-export const DOCK_COUNT = 5;
+export const DOCK_NUMBERS = [27, 28, 29, 30, 31];
+export const DOCK_COUNT = DOCK_NUMBERS.length;
 export const SLOT_MINUTES = 30;
 export const SLOT_CAPACITY = DOCK_COUNT * SLOT_MINUTES;
 export const DAY_CAPACITY = DOCK_COUNT * (WINDOW_END - WINDOW_START);
@@ -716,9 +717,9 @@ function parseRequestedDoor(value: string): { dockIndex: number | null; isTampon
     return { dockIndex: null, isTampon: true };
   }
 
-  const match = clean.match(/^(?:PORTE)?([1-5])$/);
+  const match = clean.match(/^(?:PORTE)?(27|28|29|30|31)$/);
   if (match) {
-    return { dockIndex: Number(match[1]) - 1, isTampon: false };
+    return { dockIndex: DOCK_NUMBERS.indexOf(Number(match[1])), isTampon: false };
   }
 
   return {
@@ -729,7 +730,7 @@ function parseRequestedDoor(value: string): { dockIndex: number | null; isTampon
 }
 
 function formatDoorLabel(dockIndex: number): string {
-  return dockIndex === DOCK_COUNT ? "Tampon" : `Porte ${dockIndex + 1}`;
+  return dockIndex === DOCK_COUNT ? "Tampon" : `Porte ${DOCK_NUMBERS[dockIndex]}`;
 }
 
 function buildFlux(row: Record<string, string>): string[] {
