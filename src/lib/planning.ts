@@ -579,16 +579,12 @@ export function getCurrentMinuteInParis(): number {
 
 export function getOperationalMinute(
   selectedDate: string,
-  window: OperationWindow = DEFAULT_OPERATION_WINDOW
+  window: OperationWindow = DEFAULT_OPERATION_WINDOW,
+  currentMinute: number = getCurrentMinuteInParis()
 ): number {
   void selectedDate;
-  const currentMinute = getCurrentMinuteInParis();
-
-  if (window.id === "day") {
-    return currentMinute;
-  }
-
-  return Math.min(window.end, Math.max(window.start, currentMinute));
+  void window;
+  return currentMinute;
 }
 
 export function uniqueFlux(trucks: Truck[]): string[] {
