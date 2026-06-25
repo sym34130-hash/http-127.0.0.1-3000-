@@ -512,7 +512,7 @@
         <div class="meta">
           <span class="pill">Application : roadmap-quai.vercel.app</span>
           <span class="pill">Mise à jour automatique : 30 secondes</span>
-          <span class="pill">Périmètre : 5 portes + porte Tampon</span>
+          <span class="pill">Périmètre : portes 27 à 31 + porte Tampon</span>
           <span class="pill">Vues horaires : Matin / Après-midi / Journée</span>
           <span class="pill">Version guide : 19/06/2026</span>
         </div>
@@ -687,8 +687,8 @@
             <tr>
               <td><strong>Colonne M - PORTE_SOUHAITEE</strong></td>
               <td>Optionnel : forcer une porte ou utiliser le Tampon.</td>
-              <td><span class="tag blue">1</span> à <span class="tag blue">5</span>, <span class="tag orange">TAMPON</span> ou vide.</td>
-              <td>Vide = affectation automatique. 1 à 5 = porte imposée. TAMPON = traitement exceptionnel hors capacité des 5 portes.</td>
+              <td><span class="tag blue">27</span>, <span class="tag blue">28</span>, <span class="tag blue">29</span>, <span class="tag blue">30</span>, <span class="tag blue">31</span>, <span class="tag orange">TAMPON</span> ou vide.</td>
+              <td>Vide = affectation automatique. 27 à 31 = porte imposée. TAMPON = traitement exceptionnel hors capacité des cinq portes.</td>
             </tr>
             <tr>
               <td><strong>Colonne N - PRIORITE_QUAI</strong></td>
@@ -850,7 +850,7 @@
             <span class="tag green">Recommandé</span>
           </div>
           <div class="card">
-            <h3>PORTE_SOUHAITEE = 1 à 5</h3>
+            <h3>PORTE_SOUHAITEE = 27 à 31</h3>
             <p>
               À utiliser si une tournée doit réellement aller sur une porte précise. Si la porte est occupée,
               l’application signale un conflit et génère de l’attente.
@@ -930,7 +930,7 @@
         <div class="grid grid-3">
           <div class="card">
             <h3>Lignes du quai</h3>
-            <p>Chaque ligne représente une zone terrain : Porte 1 à Porte 5, puis la ligne Tampon pour les cas exceptionnels.</p>
+            <p>Chaque ligne représente une zone terrain : Porte 27 à Porte 31, puis la ligne Tampon pour les cas exceptionnels.</p>
           </div>
           <div class="card">
             <h3>Axe horaire</h3>
@@ -1030,7 +1030,7 @@
         <h2>10. Comprendre “Capacité par 30 min”</h2>
         <p>
           Cette partie ne compte pas uniquement les camions. Elle mesure la capacité réelle du quai en minutes.
-          Avec 5 portes, chaque créneau de 30 minutes représente 150 minutes de capacité. Le tableau s’adapte
+          Avec les cinq portes 27 à 31, chaque créneau de 30 minutes représente 150 minutes de capacité. Le tableau s’adapte
           automatiquement à la plage choisie : Matin, Après-midi ou Journée.
         </p>
 
@@ -1060,8 +1060,8 @@
             </tr>
             <tr>
               <td><strong>Occupation réelle</strong></td>
-              <td>Minutes réellement occupées sur les 5 portes pendant le créneau.</td>
-              <td>5 portes occupées pendant 30 min = 150 min.</td>
+              <td>Minutes réellement occupées sur les portes 27 à 31 pendant le créneau.</td>
+              <td>Les cinq portes occupées pendant 30 min = 150 min.</td>
             </tr>
             <tr>
               <td><strong>Taux occ.</strong></td>
@@ -1087,7 +1087,7 @@
         <div class="grid grid-3">
           <div class="card">
             <h3>Affectation des portes</h3>
-            <p>Les camions sont positionnés sur les 5 portes selon l’arrivée, la disponibilité et les contraintes saisies.</p>
+            <p>Les camions sont positionnés sur les portes 27 à 31 selon l’arrivée, la disponibilité et les contraintes saisies.</p>
           </div>
           <div class="card">
             <h3>Heure de mise à quai</h3>
