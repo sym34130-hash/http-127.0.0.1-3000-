@@ -26,6 +26,7 @@ const {
   computeKpis,
   computeSlots,
   filterTrucksByOperationWindow,
+  getOperationalMinute,
   getOperationWindow,
   normalizeRows,
   uniqueFlux
@@ -136,6 +137,11 @@ assertScenario("activite matin prise en compte", () => {
   assert.equal(morningSlot?.arrivals, 2);
   assert.equal(morningSlot?.occupiedMinutes, 60);
   assert.equal(morningKpis.totalTrucks, 2);
+});
+
+assertScenario("heure de reference non bloquee par la plage", () => {
+  assert.equal(getOperationalMinute("2026-04-20", afternoonWindow, 11 * 60 + 42), 11 * 60 + 42);
+  assert.equal(getOperationalMinute("2026-04-20", afternoonWindow, 20 * 60 + 15), 20 * 60 + 15);
 });
 
 assertScenario("suppression complete du flux FRC visible", () => {
