@@ -72,6 +72,10 @@ assertScenario("arrivees simultanees et saturation des 5 portes", () => {
   assert.equal(firstSlot.occupiedMinutes, 150);
   assert.equal(firstSlot.backlogMinutes, 30);
   assert.equal(firstSlot.waitingTrucks, 1);
+  assert.deepEqual(
+    new Set(trucks.slice(0, 5).map((truck) => truck.porte_affectee)),
+    new Set(["Porte 27", "Porte 28", "Porte 29", "Porte 30", "Porte 31"])
+  );
   assert.ok(alerts.some((alert) => alert.title === "Saturation quai"));
   assert.ok(alerts.some((alert) => alert.title === "Attente quai"));
 });
@@ -152,9 +156,9 @@ assertScenario("suppression complete du flux FRC visible", () => {
 });
 
 assertScenario("porte forcee depuis Google Sheet", () => {
-  const trucks = normalizeRows([row("P1", "13:00", "20", { PORTE_SOUHAITEE: "3" })]);
+  const trucks = normalizeRows([row("P1", "13:00", "20", { PORTE_SOUHAITEE: "29" })]);
 
-  assert.equal(trucks[0].porte_affectee, "Porte 3");
+  assert.equal(trucks[0].porte_affectee, "Porte 29");
   assert.equal(trucks[0].dockIndex, 2);
 });
 
@@ -180,15 +184,22 @@ assertScenario("priorite quai a horaire identique", () => {
 
 assertScenario("conflit de porte forcee signale", () => {
   const trucks = normalizeRows([
-    row("C1", "13:00", "20", { PORTE_SOUHAITEE: "1" }),
-    row("C2", "13:00", "20", { PORTE_SOUHAITEE: "1" })
+    row("C1", "13:00", "20", { PORTE_SOUHAITEE: "27" }),
+    row("C2", "13:00", "20", { PORTE_SOUHAITEE: "27" })
   ]);
   const secondTruck = trucks.find((truck) => truck.code_voyage === "C2");
   const alerts = computeAlerts(trucks, computeSlots(trucks));
 
   assert.equal(secondTruck?.temps_attente, 30);
-  assert.ok(secondTruck?.dataIssues.some((issue) => issue.includes("Conflit Porte 1")));
+  assert.ok(secondTruck?.dataIssues.some((issue) => issue.includes("Conflit Porte 27")));
   assert.ok(alerts.some((alert) => alert.title === "Conflit porte forcee"));
+});
+
+assertScenario("anciens numeros de porte refuses", () => {
+  const trucks = normalizeRows([row("OLD", "13:00", "20", { PORTE_SOUHAITEE: "1" })]);
+
+  assert.equal(trucks[0].porteForcee, null);
+  assert.ok(trucks[0].dataIssues.some((issue) => issue.includes("Porte souhaitee invalide")));
 });
 
 fs.rmSync(tempDir, { force: true, recursive: true });
