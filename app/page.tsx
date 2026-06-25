@@ -34,6 +34,7 @@ import {
 import clsx from "clsx";
 import {
   DOCK_COUNT,
+  DOCK_NUMBERS,
   DEFAULT_OPERATION_WINDOW,
   OPERATION_WINDOWS,
   SLOT_CAPACITY,
@@ -302,7 +303,7 @@ function TopBar({
             <h1 className="text-xl font-semibold leading-tight">Roadmap Quai</h1>
             <p className="flex items-center gap-1.5 text-sm text-white/70">
               <TruckIcon className="h-3.5 w-3.5" />
-              <span>Pilotage 5 portes | Matin / Apres-midi / Journee</span>
+              <span>Pilotage portes 27 a 31 | Matin / Apres-midi / Journee</span>
             </p>
           </div>
         </div>
@@ -745,7 +746,7 @@ function GanttTimeline({
           <h2 className="text-base font-semibold">Map quai {formatOperationWindow(operationWindow)}</h2>
         </div>
         <div className="hidden items-center gap-3 text-xs text-muted md:flex">
-          <span>5 portes</span>
+          <span>Portes 27 a 31</span>
           <span>|</span>
           <span>{operationWindow.label}</span>
           <span>|</span>
@@ -1567,7 +1568,7 @@ function buildTimelineRows(
   });
 
   const dockRows = Array.from({ length: DOCK_COUNT }, (_, index) =>
-    buildTimelineRow(`dock-${index}`, `Porte ${index + 1}`, rowMap)
+    buildTimelineRow(`dock-${index}`, `Porte ${DOCK_NUMBERS[index]}`, rowMap)
   );
 
   return [...dockRows, buildTimelineRow("tampon", "Tampon", rowMap)];
